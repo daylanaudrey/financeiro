@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Gerador de Ícones PWA</title>
+</head>
+<body>
+    <h1>Gerador de Ícones PWA - Sistema Financeiro</h1>
+    <p>Use este SVG como base para gerar os ícones em diferentes tamanhos:</p>
+    
+    <!-- SVG Base para os ícones -->
+    <svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" id="base-icon">
+        <!-- Background Circle -->
+        <circle cx="256" cy="256" r="256" fill="#007bff"/>
+        
+        <!-- Background Gradient -->
+        <defs>
+            <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:#007bff;stop-opacity:1" />
+                <stop offset="100%" style="stop-color:#0056b3;stop-opacity:1" />
+            </linearGradient>
+        </defs>
+        <circle cx="256" cy="256" r="256" fill="url(#grad1)"/>
+        
+        <!-- Dollar Sign Icon -->
+        <g transform="translate(256,256)">
+            <!-- Dollar Symbol -->
+            <path d="M-20,-80 L-20,80 M20,-80 L20,80" stroke="white" stroke-width="12" stroke-linecap="round"/>
+            <path d="M-60,-40 Q-60,-60 -40,-60 L40,-60 Q60,-60 60,-40 Q60,-20 40,-20 L-40,-20 Q-60,-20 -60,0 Q-60,20 -40,20 L40,20 Q60,20 60,40 Q60,60 40,60 L-40,60 Q-60,60 -60,40" 
+                  stroke="white" stroke-width="8" fill="none"/>
+        </g>
+        
+        <!-- Chart Elements -->
+        <g transform="translate(380,380)">
+            <rect x="-15" y="-30" width="10" height="30" fill="rgba(255,255,255,0.8)" rx="2"/>
+            <rect x="0" y="-45" width="10" height="45" fill="rgba(255,255,255,0.6)" rx="2"/>
+            <rect x="15" y="-20" width="10" height="20" fill="rgba(255,255,255,0.9)" rx="2"/>
+        </g>
+    </svg>
+    
+    <script>
+        // Função para gerar PNG de diferentes tamanhos
+        function generateIcon(size) {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = size;
+            canvas.height = size;
+            
+            const svg = document.getElementById('base-icon');
+            const svgData = new XMLSerializer().serializeToString(svg);
+            const img = new Image();
+            
+            img.onload = function() {
+                ctx.drawImage(img, 0, 0, size, size);
+                const link = document.createElement('a');
+                link.download = `icon-${size}x${size}.png`;
+                link.href = canvas.toDataURL();
+                link.click();
+            };
+            
+            img.src = 'data:image/svg+xml;base64,' + btoa(svgData);
+        }
+        
+        // Gerar todos os tamanhos necessários
+        const sizes = [72, 96, 128, 144, 152, 192, 384, 512];
+        
+        // Adicionar botão para gerar todos os ícones
+        const button = document.createElement('button');
+        button.textContent = 'Gerar Todos os Ícones';
+        button.onclick = function() {
+            sizes.forEach((size, index) => {
+                setTimeout(() => generateIcon(size), index * 500);
+            });
+        };
+        document.body.appendChild(button);
+    </script>
+</body>
+</html>

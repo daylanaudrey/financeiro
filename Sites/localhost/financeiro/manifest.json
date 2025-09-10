@@ -1,0 +1,48 @@
+{
+  "name": "Sistema Financeiro",
+  "short_name": "Financeiro",
+  "description": "Sistema completo para gestão financeira pessoal e empresarial",
+  "start_url": "/?source=pwa",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#007bff",
+  "orientation": "portrait",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='45' fill='%23007bff'/%3E%3Ctext x='50' y='60' text-anchor='middle' fill='white' font-size='40' font-family='Arial'%3E₹%3C/text%3E%3C/svg%3E",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='45' fill='%23007bff'/%3E%3Ctext x='50' y='60' text-anchor='middle' fill='white' font-size='40' font-family='Arial'%3E₹%3C/text%3E%3C/svg%3E",
+      "sizes": "512x512", 
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Nova Transação",
+      "short_name": "Transação", 
+      "description": "Criar uma nova transação rapidamente",
+      "url": "/transactions?action=new"
+    },
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "description": "Visualizar resumo financeiro", 
+      "url": "/dashboard"
+    },
+    {
+      "name": "Transferência",
+      "short_name": "Transferir",
+      "description": "Fazer transferência entre contas",
+      "url": "/transfers?action=new"
+    }
+  ],
+  "categories": ["finance", "productivity", "business"],
+  "lang": "pt-BR",
+  "dir": "ltr"
+}

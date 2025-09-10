@@ -1,0 +1,198 @@
+[Thu Sep  4 16:05:04 2025] PHP 8.4.8 Development Server (http://localhost:8000) started
+[Thu Sep  4 16:06:14 2025] [::1]:61357 Accepted
+[Thu Sep  4 16:06:14 2025] === TRANSACTION CREATE START ===
+[Thu Sep  4 16:06:14 2025] POST data: {"account_id":"1","kind":"entrada","valor":"100.00","data_competencia":"2025-09-04","status":"confirmado","descricao":"Teste de lancamento"}
+[Thu Sep  4 16:06:14 2025] SESSION data: []
+[Thu Sep  4 16:06:14 2025] Calling AuthMiddleware::requireAuth()
+[Thu Sep  4 16:06:14 2025] === AUTH MIDDLEWARE START ===
+[Thu Sep  4 16:06:14 2025] Session status: 1 (1=disabled, 2=active, 3=none)
+[Thu Sep  4 16:06:14 2025] Starting new session...
+[Thu Sep  4 16:06:14 2025] Setting session save path to: /var/folders/63/t5kw_rn93y56dl6tp3jhlvsr0000gn/T
+[Thu Sep  4 16:06:14 2025] Session started successfully. ID: ffe8358c62036483f22264fd8a4265f3
+[Thu Sep  4 16:06:14 2025] Session data: []
+[Thu Sep  4 16:06:14 2025] Checking if user is logged in...
+[Thu Sep  4 16:06:14 2025] Is logged in result: NO
+[Thu Sep  4 16:06:14 2025] User not logged in, redirecting to login page
+[Thu Sep  4 16:06:14 2025] [::1]:61357 [302]: POST /api/transactions/create
+[Thu Sep  4 16:06:14 2025] [::1]:61357 Closing
+[Thu Sep  4 16:06:45 2025] [::1]:61526 Accepted
+[Thu Sep  4 16:06:45 2025] [::1]:61527 Accepted
+[Thu Sep  4 16:06:45 2025] === AUTH MIDDLEWARE START ===
+[Thu Sep  4 16:06:45 2025] Session status: 1 (1=disabled, 2=active, 3=none)
+[Thu Sep  4 16:06:45 2025] Starting new session...
+[Thu Sep  4 16:06:45 2025] Setting session save path to: /var/folders/63/t5kw_rn93y56dl6tp3jhlvsr0000gn/T
+[Thu Sep  4 16:06:45 2025] Session started successfully. ID: f9ce936e32d4e394ec89ca652d5c6abe
+[Thu Sep  4 16:06:45 2025] Session data: []
+[Thu Sep  4 16:06:45 2025] Checking if user is logged in...
+[Thu Sep  4 16:06:45 2025] Is logged in result: NO
+[Thu Sep  4 16:06:45 2025] User not logged in, redirecting to login page
+[Thu Sep  4 16:06:45 2025] [::1]:61526 [302]: GET /
+[Thu Sep  4 16:06:45 2025] [::1]:61526 Closing
+[Thu Sep  4 16:06:45 2025] [::1]:61527 [200]: GET /login
+[Thu Sep  4 16:06:45 2025] [::1]:61527 Closing
+[Thu Sep  4 16:06:45 2025] [::1]:61533 Accepted
+[Thu Sep  4 16:06:45 2025] [::1]:61533 [404]: GET /favicon.ico
+[Thu Sep  4 16:06:45 2025] [::1]:61533 Closing
+[Thu Sep  4 16:06:55 2025] [::1]:61578 Accepted
+[Thu Sep  4 16:06:55 2025] === SQL CREATE QUERY ===
+[Thu Sep  4 16:06:55 2025] Table: audit_logs
+[Thu Sep  4 16:06:55 2025] SQL: INSERT INTO audit_logs (user_id, org_id, entity, entity_id, action, old_values, new_values, description, ip_address, user_agent, created_at) VALUES (:user_id, :org_id, :entity, :entity_id, :action, :old_values, :new_values, :description, :ip_address, :user_agent, NOW())
+[Thu Sep  4 16:06:55 2025] Data: {"user_id":1,"org_id":"1","entity":"auth","entity_id":null,"action":"login","old_values":null,"new_values":null,"description":"Login realizado com sucesso","ip_address":"::1","user_agent":"Mozilla\/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit\/537.36 (KHTML, like Gecko) Chrome\/139.0.0.0 Safari\/537.36"}
+[Thu Sep  4 16:06:55 2025] SQL executed successfully. Last insert ID: 22
+[Thu Sep  4 16:06:55 2025] [::1]:61578 [200]: POST /auth/login
+[Thu Sep  4 16:06:55 2025] [::1]:61578 Closing
+[Thu Sep  4 16:06:57 2025] [::1]:61587 Accepted
+[Thu Sep  4 16:06:57 2025] [::1]:61588 Accepted
+[Thu Sep  4 16:06:57 2025] === AUTH MIDDLEWARE START ===
+[Thu Sep  4 16:06:57 2025] Session status: 1 (1=disabled, 2=active, 3=none)
+[Thu Sep  4 16:06:57 2025] Starting new session...
+[Thu Sep  4 16:06:57 2025] Setting session save path to: /var/folders/63/t5kw_rn93y56dl6tp3jhlvsr0000gn/T
+[Thu Sep  4 16:06:57 2025] Session started successfully. ID: f9ce936e32d4e394ec89ca652d5c6abe
+[Thu Sep  4 16:06:57 2025] Session data: {"user_id":1,"user_name":"Administrador","user_email":"admin@sistema.com","user_role":"admin","logged_in":true,"login_time":1757012815}
+[Thu Sep  4 16:06:57 2025] Checking if user is logged in...
+[Thu Sep  4 16:06:57 2025] Is logged in result: YES
+[Thu Sep  4 16:06:57 2025] Getting current user...
+[Thu Sep  4 16:06:57 2025] Current user data: {"id":1,"nome":"Administrador","email":"admin@sistema.com","role":"admin"}
+[Thu Sep  4 16:06:57 2025] === AUTH MIDDLEWARE END ===
+[Thu Sep  4 16:06:57 2025] [::1]:61587 [200]: GET /
+[Thu Sep  4 16:06:57 2025] [::1]:61587 Closing
+[Thu Sep  4 16:07:01 2025] [::1]:61614 Accepted
+[Thu Sep  4 16:07:01 2025] === AUTH MIDDLEWARE START ===
+[Thu Sep  4 16:07:01 2025] Session status: 1 (1=disabled, 2=active, 3=none)
+[Thu Sep  4 16:07:01 2025] Starting new session...
+[Thu Sep  4 16:07:01 2025] Setting session save path to: /var/folders/63/t5kw_rn93y56dl6tp3jhlvsr0000gn/T
+[Thu Sep  4 16:07:01 2025] Session started successfully. ID: f9ce936e32d4e394ec89ca652d5c6abe
+[Thu Sep  4 16:07:01 2025] Session data: {"user_id":1,"user_name":"Administrador","user_email":"admin@sistema.com","user_role":"admin","logged_in":true,"login_time":1757012815}
+[Thu Sep  4 16:07:01 2025] Checking if user is logged in...
+[Thu Sep  4 16:07:01 2025] Is logged in result: YES
+[Thu Sep  4 16:07:01 2025] Getting current user...
+[Thu Sep  4 16:07:01 2025] Current user data: {"id":1,"nome":"Administrador","email":"admin@sistema.com","role":"admin"}
+[Thu Sep  4 16:07:01 2025] === AUTH MIDDLEWARE END ===
+[Thu Sep  4 16:07:01 2025] [::1]:61588 [200]: GET /transactions
+[Thu Sep  4 16:07:01 2025] [::1]:61588 Closing
+[Thu Sep  4 16:07:11 2025] === TRANSACTION CREATE START ===
+[Thu Sep  4 16:07:11 2025] POST data: {"id":"","kind":"saida","descricao":"dsadasda","valor":"32.32","data_competencia":"2025-09-04","data_pagamento":"","account_id":"","status":"confirmado","observacoes":""}
+[Thu Sep  4 16:07:11 2025] SESSION data: []
+[Thu Sep  4 16:07:11 2025] Calling AuthMiddleware::requireAuth()
+[Thu Sep  4 16:07:11 2025] === AUTH MIDDLEWARE START ===
+[Thu Sep  4 16:07:11 2025] Session status: 1 (1=disabled, 2=active, 3=none)
+[Thu Sep  4 16:07:11 2025] Starting new session...
+[Thu Sep  4 16:07:11 2025] Setting session save path to: /var/folders/63/t5kw_rn93y56dl6tp3jhlvsr0000gn/T
+[Thu Sep  4 16:07:11 2025] Session started successfully. ID: f9ce936e32d4e394ec89ca652d5c6abe
+[Thu Sep  4 16:07:11 2025] Session data: {"user_id":1,"user_name":"Administrador","user_email":"admin@sistema.com","user_role":"admin","logged_in":true,"login_time":1757012815}
+[Thu Sep  4 16:07:11 2025] Checking if user is logged in...
+[Thu Sep  4 16:07:11 2025] Is logged in result: YES
+[Thu Sep  4 16:07:11 2025] Getting current user...
+[Thu Sep  4 16:07:11 2025] Current user data: {"id":1,"nome":"Administrador","email":"admin@sistema.com","role":"admin"}
+[Thu Sep  4 16:07:11 2025] === AUTH MIDDLEWARE END ===
+[Thu Sep  4 16:07:11 2025] Auth successful, user: {"id":1,"nome":"Administrador","email":"admin@sistema.com","role":"admin"}
+[Thu Sep  4 16:07:11 2025] Parsed data - Account ID: 0, Kind: saida, Valor: 32.32, Desc: dsadasda
+[Thu Sep  4 16:07:11 2025] Starting validations...
+[Thu Sep  4 16:07:11 2025] VALIDATION FAILED: Account ID missing
+[Thu Sep  4 16:07:11 2025] [::1]:61614 [200]: POST /api/transactions/create
+[Thu Sep  4 16:07:11 2025] [::1]:61614 Closing
+[Thu Sep  4 16:07:14 2025] [::1]:61682 Accepted
+[Thu Sep  4 16:07:14 2025] === TRANSACTION CREATE START ===
+[Thu Sep  4 16:07:14 2025] POST data: {"id":"","kind":"saida","descricao":"dsadasda","valor":"32.32","data_competencia":"2025-09-04","data_pagamento":"","account_id":"1","status":"confirmado","observacoes":""}
+[Thu Sep  4 16:07:14 2025] SESSION data: []
+[Thu Sep  4 16:07:14 2025] Calling AuthMiddleware::requireAuth()
+[Thu Sep  4 16:07:14 2025] === AUTH MIDDLEWARE START ===
+[Thu Sep  4 16:07:14 2025] Session status: 1 (1=disabled, 2=active, 3=none)
+[Thu Sep  4 16:07:14 2025] Starting new session...
+[Thu Sep  4 16:07:14 2025] Setting session save path to: /var/folders/63/t5kw_rn93y56dl6tp3jhlvsr0000gn/T
+[Thu Sep  4 16:07:14 2025] Session started successfully. ID: f9ce936e32d4e394ec89ca652d5c6abe
+[Thu Sep  4 16:07:14 2025] Session data: {"user_id":1,"user_name":"Administrador","user_email":"admin@sistema.com","user_role":"admin","logged_in":true,"login_time":1757012815}
+[Thu Sep  4 16:07:14 2025] Checking if user is logged in...
+[Thu Sep  4 16:07:14 2025] Is logged in result: YES
+[Thu Sep  4 16:07:14 2025] Getting current user...
+[Thu Sep  4 16:07:14 2025] Current user data: {"id":1,"nome":"Administrador","email":"admin@sistema.com","role":"admin"}
+[Thu Sep  4 16:07:14 2025] === AUTH MIDDLEWARE END ===
+[Thu Sep  4 16:07:14 2025] Auth successful, user: {"id":1,"nome":"Administrador","email":"admin@sistema.com","role":"admin"}
+[Thu Sep  4 16:07:14 2025] Parsed data - Account ID: 1, Kind: saida, Valor: 32.32, Desc: dsadasda
+[Thu Sep  4 16:07:14 2025] Starting validations...
+[Thu Sep  4 16:07:14 2025] All validations passed!
+[Thu Sep  4 16:07:14 2025] Checking account with ID: 1
+[Thu Sep  4 16:07:14 2025] Account found: {"id":1,"org_id":1,"pessoa_tipo":"PF","nome":"Nubank Daylan","razao_social":null,"cnpj":null,"inscricao_estadual":null,"cpf":null,"tipo":"corrente","banco":null,"agencia":null,"conta":null,"moeda":"BRL","saldo_inicial":"22.65","saldo_atual":"2523.80","ativo":1,"descricao":null,"cor":"#007bff","created_by":2,"created_at":"2025-09-04 10:05:39","updated_at":"2025-09-04 15:22:28","deleted_at":null}
+[Thu Sep  4 16:07:14 2025] Creating transaction with data: {"org_id":1,"account_id":1,"kind":"saida","valor":32.32,"data_competencia":"2025-09-04","data_pagamento":"","status":"confirmado","category_id":null,"contact_id":null,"descricao":"dsadasda","observacoes":null,"created_by":1}
+[Thu Sep  4 16:07:14 2025] === SQL CREATE QUERY ===
+[Thu Sep  4 16:07:14 2025] Table: transactions
+[Thu Sep  4 16:07:14 2025] SQL: INSERT INTO transactions (org_id, account_id, kind, valor, data_competencia, data_pagamento, status, category_id, contact_id, descricao, observacoes, created_by, created_at) VALUES (:org_id, :account_id, :kind, :valor, :data_competencia, :data_pagamento, :status, :category_id, :contact_id, :descricao, :observacoes, :created_by, NOW())
+[Thu Sep  4 16:07:14 2025] Data: {"org_id":1,"account_id":1,"kind":"saida","valor":32.32,"data_competencia":"2025-09-04","data_pagamento":"","status":"confirmado","category_id":null,"contact_id":null,"descricao":"dsadasda","observacoes":null,"created_by":1}
+[Thu Sep  4 16:07:14 2025] EXCEPTION in TransactionController::create(): SQLSTATE[22007]: Invalid datetime format: 1292 Incorrect date value: '' for column 'data_pagamento' at row 1
+[Thu Sep  4 16:07:14 2025] Exception file: /Users/daylan/Sites/localhost/financeiro/app/models/BaseModel.php:36
+[Thu Sep  4 16:07:14 2025] Exception trace: #0 /Users/daylan/Sites/localhost/financeiro/app/models/BaseModel.php(36): PDOStatement->execute(Array)
+#1 /Users/daylan/Sites/localhost/financeiro/app/models/Transaction.php(67): BaseModel->create(Array)
+#2 /Users/daylan/Sites/localhost/financeiro/app/controllers/TransactionController.php(137): Transaction->createTransaction(Array)
+#3 /Users/daylan/Sites/localhost/financeiro/index.php(89): TransactionController->create()
+#4 {main}
+[Thu Sep  4 16:07:14 2025] [::1]:61682 [200]: POST /api/transactions/create
+[Thu Sep  4 16:07:14 2025] [::1]:61682 Closing
+[Thu Sep  4 16:07:24 2025] [::1]:61735 Accepted
+[Thu Sep  4 16:07:24 2025] [::1]:61735 [404]: GET /.well-known/appspecific/com.chrome.devtools.json
+[Thu Sep  4 16:07:24 2025] [::1]:61735 Closing
+[Thu Sep  4 16:08:49 2025] [::1]:62151 Accepted
+[Thu Sep  4 16:08:49 2025] === TRANSACTION CREATE START ===
+[Thu Sep  4 16:08:49 2025] POST data: {"id":"","kind":"saida","descricao":"dsadasda","valor":"32.32","data_competencia":"2025-09-04","data_pagamento":"","account_id":"1","status":"confirmado","observacoes":""}
+[Thu Sep  4 16:08:49 2025] SESSION data: []
+[Thu Sep  4 16:08:49 2025] Calling AuthMiddleware::requireAuth()
+[Thu Sep  4 16:08:49 2025] === AUTH MIDDLEWARE START ===
+[Thu Sep  4 16:08:49 2025] Session status: 1 (1=disabled, 2=active, 3=none)
+[Thu Sep  4 16:08:49 2025] Starting new session...
+[Thu Sep  4 16:08:49 2025] Setting session save path to: /var/folders/63/t5kw_rn93y56dl6tp3jhlvsr0000gn/T
+[Thu Sep  4 16:08:49 2025] Session started successfully. ID: f9ce936e32d4e394ec89ca652d5c6abe
+[Thu Sep  4 16:08:49 2025] Session data: {"user_id":1,"user_name":"Administrador","user_email":"admin@sistema.com","user_role":"admin","logged_in":true,"login_time":1757012815}
+[Thu Sep  4 16:08:49 2025] Checking if user is logged in...
+[Thu Sep  4 16:08:49 2025] Is logged in result: YES
+[Thu Sep  4 16:08:49 2025] Getting current user...
+[Thu Sep  4 16:08:49 2025] Current user data: {"id":1,"nome":"Administrador","email":"admin@sistema.com","role":"admin"}
+[Thu Sep  4 16:08:49 2025] === AUTH MIDDLEWARE END ===
+[Thu Sep  4 16:08:49 2025] Auth successful, user: {"id":1,"nome":"Administrador","email":"admin@sistema.com","role":"admin"}
+[Thu Sep  4 16:08:49 2025] Parsed data - Account ID: 1, Kind: saida, Valor: 32.32, Desc: dsadasda
+[Thu Sep  4 16:08:49 2025] Starting validations...
+[Thu Sep  4 16:08:49 2025] All validations passed!
+[Thu Sep  4 16:08:49 2025] Checking account with ID: 1
+[Thu Sep  4 16:08:49 2025] Account found: {"id":1,"org_id":1,"pessoa_tipo":"PF","nome":"Nubank Daylan","razao_social":null,"cnpj":null,"inscricao_estadual":null,"cpf":null,"tipo":"corrente","banco":null,"agencia":null,"conta":null,"moeda":"BRL","saldo_inicial":"22.65","saldo_atual":"2523.80","ativo":1,"descricao":null,"cor":"#007bff","created_by":2,"created_at":"2025-09-04 10:05:39","updated_at":"2025-09-04 15:22:28","deleted_at":null}
+[Thu Sep  4 16:08:49 2025] Creating transaction with data: {"org_id":1,"account_id":1,"kind":"saida","valor":32.32,"data_competencia":"2025-09-04","data_pagamento":null,"status":"confirmado","category_id":null,"contact_id":null,"descricao":"dsadasda","observacoes":null,"created_by":1}
+[Thu Sep  4 16:08:49 2025] === SQL CREATE QUERY ===
+[Thu Sep  4 16:08:49 2025] Table: transactions
+[Thu Sep  4 16:08:49 2025] SQL: INSERT INTO transactions (org_id, account_id, kind, valor, data_competencia, data_pagamento, status, category_id, contact_id, descricao, observacoes, created_by, created_at) VALUES (:org_id, :account_id, :kind, :valor, :data_competencia, :data_pagamento, :status, :category_id, :contact_id, :descricao, :observacoes, :created_by, NOW())
+[Thu Sep  4 16:08:49 2025] Data: {"org_id":1,"account_id":1,"kind":"saida","valor":32.32,"data_competencia":"2025-09-04","data_pagamento":null,"status":"confirmado","category_id":null,"contact_id":null,"descricao":"dsadasda","observacoes":null,"created_by":1}
+[Thu Sep  4 16:08:49 2025] SQL executed successfully. Last insert ID: 9
+[Thu Sep  4 16:08:49 2025] Transaction creation result - ID: 9
+[Thu Sep  4 16:08:49 2025] === SQL CREATE QUERY ===
+[Thu Sep  4 16:08:49 2025] Table: audit_logs
+[Thu Sep  4 16:08:49 2025] SQL: INSERT INTO audit_logs (user_id, org_id, entity, entity_id, action, old_values, new_values, description, ip_address, user_agent, created_at) VALUES (:user_id, :org_id, :entity, :entity_id, :action, :old_values, :new_values, :description, :ip_address, :user_agent, NOW())
+[Thu Sep  4 16:08:49 2025] Data: {"user_id":1,"org_id":1,"entity":"transaction","entity_id":"9","action":"create","old_values":null,"new_values":"{\"org_id\":1,\"account_id\":1,\"kind\":\"saida\",\"valor\":32.32,\"data_competencia\":\"2025-09-04\",\"data_pagamento\":null,\"status\":\"confirmado\",\"category_id\":null,\"contact_id\":null,\"descricao\":\"dsadasda\",\"observacoes\":null,\"created_by\":1}","description":"Lan\u00e7amento criado: dsadasda","ip_address":"::1","user_agent":"Mozilla\/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit\/537.36 (KHTML, like Gecko) Chrome\/139.0.0.0 Safari\/537.36"}
+[Thu Sep  4 16:08:49 2025] SQL executed successfully. Last insert ID: 23
+[Thu Sep  4 16:08:49 2025] SUCCESS: Transaction created successfully with ID: 9
+[Thu Sep  4 16:08:49 2025] [::1]:62151 [200]: POST /api/transactions/create
+[Thu Sep  4 16:08:49 2025] [::1]:62151 Closing
+[Thu Sep  4 16:08:51 2025] [::1]:62161 Accepted
+[Thu Sep  4 16:08:51 2025] === AUTH MIDDLEWARE START ===
+[Thu Sep  4 16:08:51 2025] Session status: 1 (1=disabled, 2=active, 3=none)
+[Thu Sep  4 16:08:51 2025] Starting new session...
+[Thu Sep  4 16:08:51 2025] Setting session save path to: /var/folders/63/t5kw_rn93y56dl6tp3jhlvsr0000gn/T
+[Thu Sep  4 16:08:51 2025] Session started successfully. ID: f9ce936e32d4e394ec89ca652d5c6abe
+[Thu Sep  4 16:08:51 2025] Session data: {"user_id":1,"user_name":"Administrador","user_email":"admin@sistema.com","user_role":"admin","logged_in":true,"login_time":1757012815}
+[Thu Sep  4 16:08:51 2025] Checking if user is logged in...
+[Thu Sep  4 16:08:51 2025] Is logged in result: YES
+[Thu Sep  4 16:08:51 2025] Getting current user...
+[Thu Sep  4 16:08:51 2025] Current user data: {"id":1,"nome":"Administrador","email":"admin@sistema.com","role":"admin"}
+[Thu Sep  4 16:08:51 2025] === AUTH MIDDLEWARE END ===
+[Thu Sep  4 16:08:51 2025] [::1]:62161 [200]: GET /transactions
+[Thu Sep  4 16:08:51 2025] [::1]:62161 Closing
+[Thu Sep  4 16:08:51 2025] [::1]:62162 Accepted
+[Thu Sep  4 16:08:51 2025] [::1]:62162 [404]: GET /.well-known/appspecific/com.chrome.devtools.json
+[Thu Sep  4 16:08:51 2025] [::1]:62162 Closing
+[Thu Sep  4 16:27:26 2025] [::1]:64168 Accepted
+[Thu Sep  4 16:27:26 2025] === AUTH MIDDLEWARE START ===
+[Thu Sep  4 16:27:26 2025] Session status: 1 (1=disabled, 2=active, 3=none)
+[Thu Sep  4 16:27:26 2025] Starting new session...
+[Thu Sep  4 16:27:26 2025] Setting session save path to: /var/folders/63/t5kw_rn93y56dl6tp3jhlvsr0000gn/T
+[Thu Sep  4 16:27:26 2025] Session started successfully. ID: e46b4d03a1d278fd3b5d859c14ebfb51
+[Thu Sep  4 16:27:26 2025] Session data: []
+[Thu Sep  4 16:27:26 2025] Checking if user is logged in...
+[Thu Sep  4 16:27:26 2025] Is logged in result: NO
+[Thu Sep  4 16:27:26 2025] User not logged in, redirecting to login page
+[Thu Sep  4 16:27:26 2025] [::1]:64168 [302]: GET /categories
+[Thu Sep  4 16:27:26 2025] [::1]:64168 Closing
