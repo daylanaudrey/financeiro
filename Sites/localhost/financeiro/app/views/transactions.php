@@ -617,7 +617,59 @@
 let deleteTransactionId = null;
 
 function setTransactionType(type) {
-    document.getElementById('transactionKind').value = type;
+    $('#transactionKind').val(type).trigger('change');
+}
+
+function updateCategoriesByType(tipo) {
+    if (!tipo) {
+        // Se não há tipo selecionado, mostrar todas as categorias
+        loadAllCategories();
+        return Promise.resolve();
+    }
+    
+    return fetch(`<?= url('/api/transactions/categories') ?>?tipo=${tipo}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                updateCategorySelect(data.categories);
+            } else {
+                console.error('Erro ao carregar categorias:', data.message);
+                // Em caso de erro, carregar todas as categorias
+                loadAllCategories();
+            }
+        })
+        .catch(error => {
+            console.error('Erro na requisição de categorias:', error);
+            // Em caso de erro, carregar todas as categorias
+            loadAllCategories();
+        });
+}
+
+function updateCategorySelect(categories) {
+    const $categorySelect = $('#transactionCategory');
+    const currentValue = $categorySelect.val();
+    
+    // Limpar opções existentes (exceto a primeira)
+    $categorySelect.find('option:not(:first)').remove();
+    
+    // Adicionar novas categorias
+    categories.forEach(category => {
+        const option = new Option(category.nome, category.id);
+        $categorySelect.append(option);
+    });
+    
+    // Tentar manter a seleção anterior se ainda existir
+    if (currentValue && $categorySelect.find(`option[value="${currentValue}"]`).length > 0) {
+        $categorySelect.val(currentValue).trigger('change');
+    } else {
+        $categorySelect.val('').trigger('change');
+    }
+}
+
+function loadAllCategories() {
+    // Recarregar todas as categorias (fallback)
+    const allCategories = <?= json_encode($categories) ?>;
+    updateCategorySelect(allCategories);
 }
 
 // Definir data de hoje como padrão e aplicar máscara de moeda
@@ -818,6 +870,12 @@ function resetTransactionForm() {
     $('#transactionKind').val('entrada').trigger('change');
     $('#transactionStatus').val('confirmado').trigger('change');
     $('#transactionRecurrenceType').val('').trigger('change');
+    
+    // Carregar categorias para o tipo padrão (entrada)
+    updateCategoriesByType('entrada');
+    
+    // Esconder campos de recorrência
+    document.getElementById('recurrenceFields').style.display = 'none';
 }
 
 function editTransaction(id) {
@@ -846,9 +904,13 @@ function editTransaction(id) {
                 
                 // Usar Select2 para todos os campos
                 $('#transactionAccount').val(transaction.account_id).trigger('change');
-                $('#transactionCategory').val(transaction.category_id || null).trigger('change');
                 $('#transactionKind').val(transaction.kind).trigger('change');
                 $('#transactionStatus').val(transaction.status).trigger('change');
+                
+                // Carregar categorias para o tipo da transação e depois selecionar a categoria
+                updateCategoriesByType(transaction.kind).then(() => {
+                    $('#transactionCategory').val(transaction.category_id || null).trigger('change');
+                });
                 document.getElementById('transactionObservacoes').value = transaction.observacoes || '';
                 
                 // Carregar campos de recorrência se existirem
@@ -1029,24 +1091,7 @@ function deleteTransaction(id, descricao) {
 
 // Resetar formulário quando modal é fechado
 document.getElementById('transactionModal').addEventListener('hidden.bs.modal', function() {
-    document.getElementById('transactionForm').reset();
-    document.getElementById('transactionId').value = '';
-    document.getElementById('transactionModalTitle').textContent = 'Novo Lançamento';
-    document.getElementById('transactionSaveButtonText').textContent = 'Salvar';
-    
-    // Definir data de hoje novamente
-    const today = new Date().toISOString().split('T')[0];
-    document.getElementById('transactionDataCompetencia').value = today;
-    
-    // Limpar todos os Select2
-    $('#transactionCategory').val(null).trigger('change');
-    $('#transactionAccount').val('').trigger('change');
-    $('#transactionKind').val('entrada').trigger('change');
-    $('#transactionStatus').val('confirmado').trigger('change');
-    $('#transactionRecurrenceType').val('').trigger('change');
-    
-    // Esconder campos de recorrência ao fechar modal
-    document.getElementById('recurrenceFields').style.display = 'none';
+    resetTransactionForm();
 });
 
 // Controlar exibição dos campos de recorrência baseado no status
@@ -1068,6 +1113,16 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Controlar ao mudar o status
     statusSelect.addEventListener('change', toggleRecurrenceFields);
+    
+    // Usar Select2 change event também
+    $('#transactionStatus').on('change', function() {
+        toggleRecurrenceFields();
+    });
+    
+    // Filtrar categorias baseado no tipo selecionado
+    $('#transactionKind').on('change', function() {
+        updateCategoriesByType($(this).val());
+    });
     
     // Controlar ao abrir modal para edição
     window.toggleRecurrenceFields = toggleRecurrenceFields;

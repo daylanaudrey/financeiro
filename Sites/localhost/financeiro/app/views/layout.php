@@ -32,7 +32,7 @@
     <!-- Select2 -->
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
     <!-- CSS Local -->
-    <link href="/financeiro/assets/css/style.css" rel="stylesheet">
+    <link href="<?= url('/assets/css/style.css') ?>" rel="stylesheet">
     
     <style>
         :root {
@@ -45,6 +45,86 @@
             --dark-color: #1f2937;
             --light-gray: #f9fafb;
             --border-color: #e5e7eb;
+        }
+        
+        /* Fallback CSS caso os CDNs não carreguem */
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .row { display: flex; flex-wrap: wrap; margin: -15px; }
+        .col-lg-3, .col-md-6, .col-lg-6, .col-12 { padding: 15px; }
+        .col-lg-3 { flex: 0 0 25%; }
+        .col-md-6 { flex: 0 0 50%; }
+        .col-lg-6 { flex: 0 0 50%; }
+        .col-12 { flex: 0 0 100%; }
+        .btn { 
+            display: inline-block; 
+            padding: 8px 16px; 
+            margin: 4px; 
+            border: 1px solid #ccc; 
+            border-radius: 4px; 
+            text-decoration: none; 
+            color: white;
+            cursor: pointer;
+        }
+        .btn-success { background-color: #28a745; border-color: #28a745; }
+        .btn-danger { background-color: #dc3545; border-color: #dc3545; }
+        .card { 
+            border: 1px solid #dee2e6; 
+            border-radius: 8px; 
+            margin-bottom: 20px; 
+            background: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .card-header { 
+            padding: 12px 20px; 
+            background-color: #f8f9fa; 
+            border-bottom: 1px solid #dee2e6; 
+            font-weight: bold;
+        }
+        .card-body { padding: 20px; }
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #dee2e6;
+        }
+        .page-title { margin: 0; font-size: 2rem; color: #333; }
+        .quick-actions { display: flex; gap: 10px; }
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .stat-card.success { border-left: 4px solid #28a745; }
+        .stat-card.danger { border-left: 4px solid #dc3545; }
+        .stat-card.info { border-left: 4px solid #17a2b8; }
+        .stat-card.warning { border-left: 4px solid #ffc107; }
+        h4, h5, h6 { margin-top: 0; margin-bottom: 10px; }
+        h4 { font-size: 1.5rem; color: #333; }
+        h5 { font-size: 1.25rem; color: #333; }
+        h6 { font-size: 1rem; color: #666; }
+        .text-muted { color: #6c757d !important; }
+        .mb-2 { margin-bottom: 8px !important; }
+        .mb-3 { margin-bottom: 16px !important; }
+        .mb-4 { margin-bottom: 24px !important; }
+        .mb-5 { margin-bottom: 32px !important; }
+        .d-flex { display: flex !important; }
+        .justify-content-between { justify-content: space-between !important; }
+        .align-items-center { align-items: center !important; }
+        
+        /* Fix para gráficos Chart.js */
+        .chart-container {
+            position: relative;
+            height: 300px;
+            width: 100%;
+            overflow: hidden;
+        }
+        .chart-container canvas {
+            max-height: 300px !important;
+            max-width: 100% !important;
         }
         
         body {

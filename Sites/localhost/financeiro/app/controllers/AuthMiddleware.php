@@ -54,6 +54,18 @@ class AuthMiddleware {
         
         if (!$isLoggedIn) {
             error_log("User not logged in, redirecting to login page");
+            
+            // Capturar a URL atual para redirecionamento pós-login
+            $currentUrl = $_SERVER['REQUEST_URI'];
+            
+            // Evitar loops infinitos - não salvar URLs de auth
+            if (!in_array($currentUrl, ['/login', '/register', '/logout']) && 
+                !str_contains($currentUrl, '/login') && 
+                !str_contains($currentUrl, '/logout')) {
+                $_SESSION['redirect_after_login'] = $currentUrl;
+                error_log("Saved redirect URL: " . $currentUrl);
+            }
+            
             header('Location: ' . url('/login'));
             exit;
         }

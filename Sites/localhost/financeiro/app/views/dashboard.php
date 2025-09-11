@@ -330,7 +330,9 @@
             </div>
             <div class="card-body">
                 <?php if (!empty($categoryExpenses['PF'])): ?>
-                    <canvas id="chartCategoriesPF" width="400" height="400"></canvas>
+                    <div class="chart-container">
+                        <canvas id="chartCategoriesPF"></canvas>
+                    </div>
                 <?php else: ?>
                     <div class="empty-state">
                         <i class="fas fa-chart-pie"></i>
@@ -355,7 +357,9 @@
             </div>
             <div class="card-body">
                 <?php if (!empty($categoryExpenses['PJ'])): ?>
-                    <canvas id="chartCategoriesPJ" width="400" height="400"></canvas>
+                    <div class="chart-container">
+                        <canvas id="chartCategoriesPJ"></canvas>
+                    </div>
                 <?php else: ?>
                     <div class="empty-state">
                         <i class="fas fa-chart-pie"></i>
@@ -629,6 +633,15 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('quickIncomeData').value = today;
     document.getElementById('quickExpenseData').value = today;
     
+    // Carregar categorias corretas ao abrir os modais
+    document.getElementById('quickIncomeModal').addEventListener('show.bs.modal', function() {
+        updateDashboardCategoriesByType('entrada', 'quickIncomeCategory');
+    });
+    
+    document.getElementById('quickExpenseModal').addEventListener('show.bs.modal', function() {
+        updateDashboardCategoriesByType('saida', 'quickExpenseCategory');
+    });
+    
     // Aplicar máscara de moeda aos campos de valor
     function formatBrazilianCurrency(value) {
         let numbers = value.replace(/\D/g, '');
@@ -668,6 +681,61 @@ function parseBrazilianCurrency(value) {
         }
     }
     return cleaned;
+}
+
+// Função para atualizar categorias no dashboard baseado no tipo
+function updateDashboardCategoriesByType(tipo, selectId) {
+    if (!tipo) {
+        return;
+    }
+    
+    fetch(`<?= url('/api/transactions/categories') ?>?tipo=${tipo}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                updateDashboardCategorySelect(data.categories, selectId);
+            } else {
+                console.error('Erro ao carregar categorias:', data.message);
+                // Em caso de erro, carregar todas as categorias
+                loadAllDashboardCategories(selectId);
+            }
+        })
+        .catch(error => {
+            console.error('Erro na requisição de categorias:', error);
+            // Em caso de erro, carregar todas as categorias
+            loadAllDashboardCategories(selectId);
+        });
+}
+
+function updateDashboardCategorySelect(categories, selectId) {
+    const categorySelect = document.getElementById(selectId);
+    const currentValue = categorySelect.value;
+    
+    // Limpar opções existentes (exceto a primeira)
+    const firstOption = categorySelect.querySelector('option:first-child');
+    categorySelect.innerHTML = '';
+    categorySelect.appendChild(firstOption);
+    
+    // Adicionar novas categorias
+    categories.forEach(category => {
+        const option = document.createElement('option');
+        option.value = category.id;
+        option.textContent = category.nome;
+        categorySelect.appendChild(option);
+    });
+    
+    // Tentar manter a seleção anterior se ainda existir
+    if (currentValue && categorySelect.querySelector(`option[value="${currentValue}"]`)) {
+        categorySelect.value = currentValue;
+    } else {
+        categorySelect.value = '';
+    }
+}
+
+function loadAllDashboardCategories(selectId) {
+    // Recarregar todas as categorias (fallback)
+    const allCategories = <?= json_encode($categories) ?>;
+    updateDashboardCategorySelect(allCategories, selectId);
 }
 
 function saveQuickIncome() {
@@ -750,6 +818,8 @@ document.getElementById('quickIncomeModal').addEventListener('hidden.bs.modal', 
     const today = new Date().toISOString().split('T')[0];
     document.getElementById('quickIncomeData').value = today;
     document.getElementById('quickIncomeValor').value = 'R$ 0,00';
+    // Recarregar todas as categorias
+    loadAllDashboardCategories('quickIncomeCategory');
 });
 
 document.getElementById('quickExpenseModal').addEventListener('hidden.bs.modal', function() {
@@ -757,6 +827,8 @@ document.getElementById('quickExpenseModal').addEventListener('hidden.bs.modal',
     const today = new Date().toISOString().split('T')[0];
     document.getElementById('quickExpenseData').value = today;
     document.getElementById('quickExpenseValor').value = 'R$ 0,00';
+    // Recarregar todas as categorias
+    loadAllDashboardCategories('quickExpenseCategory');
 });
 
 // Função para lançar um agendamento

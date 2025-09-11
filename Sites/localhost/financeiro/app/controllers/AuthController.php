@@ -99,10 +99,18 @@ class AuthController extends BaseController {
                 'Login realizado com sucesso'
             );
             
+            // Verificar se há URL de redirecionamento salva
+            $redirectUrl = url('/');
+            if (isset($_SESSION['redirect_after_login'])) {
+                $redirectUrl = $_SESSION['redirect_after_login'];
+                unset($_SESSION['redirect_after_login']); // Limpar após uso
+                error_log("Using saved redirect URL: " . $redirectUrl);
+            }
+            
             $this->json([
                 'success' => true,
                 'message' => 'Login realizado com sucesso',
-                'redirect' => url('/')
+                'redirect' => $redirectUrl
             ]);
             
         } catch (Exception $e) {

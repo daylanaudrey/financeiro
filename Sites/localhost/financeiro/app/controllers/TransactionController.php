@@ -489,6 +489,44 @@ class TransactionController extends BaseController {
         }
     }
     
+    public function getCategoriesByType() {
+        try {
+            $user = AuthMiddleware::requireAuth();
+            
+            $tipo = $_GET['tipo'] ?? '';
+            $orgId = 1; // Por enquanto fixo
+            
+            if (empty($tipo)) {
+                $this->json(['success' => false, 'message' => 'Tipo é obrigatório']);
+                return;
+            }
+            
+            // Mapear tipo de transação para tipo de categoria
+            $tipoCategoriaMap = [
+                'entrada' => 'receita',
+                'saida' => 'despesa'
+            ];
+            
+            $tipoCategoria = $tipoCategoriaMap[$tipo] ?? null;
+            
+            if (!$tipoCategoria) {
+                $this->json(['success' => false, 'message' => 'Tipo de transação inválido']);
+                return;
+            }
+            
+            $categories = $this->categoryModel->getCategoriesByType($orgId, $tipoCategoria);
+            
+            $this->json([
+                'success' => true,
+                'categories' => $categories
+            ]);
+            
+        } catch (Exception $e) {
+            error_log("Erro ao buscar categorias por tipo: " . $e->getMessage());
+            $this->json(['success' => false, 'message' => 'Erro interno do servidor']);
+        }
+    }
+    
     private function generateRecurringTransactions($baseTransactionData, $originalTransactionId) {
         $recurringIds = [];
         

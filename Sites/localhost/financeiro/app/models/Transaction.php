@@ -46,6 +46,28 @@ class Transaction extends BaseModel {
         return $stmt->fetchAll();
     }
     
+    public function getRecentTransactionsWithUser($orgId, $limit = 10) {
+        $sql = "
+            SELECT t.*, 
+                   a.nome as account_name, a.tipo as account_type,
+                   c.nome as category_name, c.tipo as category_type, c.cor as category_color,
+                   ct.nome as contact_name, ct.tipo as contact_type,
+                   u.nome as created_by_name,
+                   DATE(t.created_at) as created_date
+            FROM {$this->table} t
+            INNER JOIN accounts a ON t.account_id = a.id
+            LEFT JOIN categories c ON t.category_id = c.id
+            LEFT JOIN contacts ct ON t.contact_id = ct.id
+            LEFT JOIN users u ON t.created_by = u.id
+            WHERE t.org_id = ? AND t.deleted_at IS NULL
+            ORDER BY t.created_at DESC, t.id DESC
+            LIMIT ?
+        ";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([$orgId, $limit]);
+        return $stmt->fetchAll();
+    }
+    
     public function getCategoryExpensesChart($orgId, $year) {
         $sql = "
             SELECT c.nome, c.cor, SUM(t.valor) as total
