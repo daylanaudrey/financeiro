@@ -6,13 +6,33 @@ class Transaction extends BaseModel {
     
     public function getTransactionsByOrg($orgId, $limit = 50, $offset = 0) {
         $sql = "
-            SELECT t.*, 
+            SELECT t.*,
                    a.nome as account_name, a.tipo as account_type,
+                   cc.nome as credit_card_name, cc.bandeira as credit_card_bandeira,
                    c.nome as category_name, c.tipo as category_type, c.cor as category_color,
                    ct.nome as contact_name, ct.tipo as contact_type,
-                   u.nome as created_by_name
+                   u.nome as created_by_name,
+                   -- Campos para baixas parciais
+                   t.valor as valor_original,
+                   COALESCE(
+                       (SELECT SUM(pp.valor)
+                        FROM partial_payments pp
+                        WHERE pp.transaction_id = t.id AND pp.deleted_at IS NULL),
+                       0
+                   ) as valor_pago,
+                   (t.valor - COALESCE(
+                       (SELECT SUM(pp.valor)
+                        FROM partial_payments pp
+                        WHERE pp.transaction_id = t.id AND pp.deleted_at IS NULL),
+                       0
+                   )) as valor_pendente,
+                   CASE WHEN EXISTS(
+                       SELECT 1 FROM partial_payments pp
+                       WHERE pp.transaction_id = t.id AND pp.deleted_at IS NULL
+                   ) THEN 1 ELSE 0 END as is_partial
             FROM {$this->table} t
-            INNER JOIN accounts a ON t.account_id = a.id
+            LEFT JOIN accounts a ON t.account_id = a.id
+            LEFT JOIN credit_cards cc ON t.credit_card_id = cc.id
             LEFT JOIN categories c ON t.category_id = c.id
             LEFT JOIN contacts ct ON t.contact_id = ct.id
             LEFT JOIN users u ON t.created_by = u.id
@@ -27,13 +47,15 @@ class Transaction extends BaseModel {
     
     public function getConfirmedTransactionsByOrg($orgId, $limit = 50, $offset = 0) {
         $sql = "
-            SELECT t.*, 
+            SELECT t.*,
                    a.nome as account_name, a.tipo as account_type,
+                   cc.nome as credit_card_name, cc.bandeira as credit_card_bandeira,
                    c.nome as category_name, c.tipo as category_type, c.cor as category_color,
                    ct.nome as contact_name, ct.tipo as contact_type,
                    u.nome as created_by_name
             FROM {$this->table} t
-            INNER JOIN accounts a ON t.account_id = a.id
+            LEFT JOIN accounts a ON t.account_id = a.id
+            LEFT JOIN credit_cards cc ON t.credit_card_id = cc.id
             LEFT JOIN categories c ON t.category_id = c.id
             LEFT JOIN contacts ct ON t.contact_id = ct.id
             LEFT JOIN users u ON t.created_by = u.id
@@ -48,7 +70,7 @@ class Transaction extends BaseModel {
     
     public function getRecentTransactionsWithUser($orgId, $limit = 10) {
         $sql = "
-            SELECT t.*, 
+            SELECT t.*,
                    a.nome as account_name, a.tipo as account_type,
                    c.nome as category_name, c.tipo as category_type, c.cor as category_color,
                    ct.nome as contact_name, ct.tipo as contact_type,
@@ -113,38 +135,56 @@ class Transaction extends BaseModel {
     public function getTransactionsWithFilters($orgId, $filters = [], $limit = 25, $offset = 0) {
         // Base da query
         $baseSelect = "
-            SELECT t.*, 
+            SELECT t.*,
                    a.nome as account_name, a.tipo as account_type,
+                   cr.nome as credit_card_name, cr.bandeira as credit_card_bandeira,
                    c.nome as category_name, c.tipo as category_type, c.cor as category_color,
                    ct.nome as contact_name, ct.tipo as contact_type,
-                   cc.nome as cost_center_name, cc.codigo as cost_center_code, cc.cor as cost_center_color,
-                   u.nome as created_by_name
+                   u.nome as created_by_name,
+                   -- Campos para baixas parciais
+                   t.valor as valor_original,
+                   COALESCE(
+                       (SELECT SUM(pp.valor)
+                        FROM partial_payments pp
+                        WHERE pp.transaction_id = t.id AND pp.deleted_at IS NULL),
+                       0
+                   ) as valor_pago,
+                   (t.valor - COALESCE(
+                       (SELECT SUM(pp.valor)
+                        FROM partial_payments pp
+                        WHERE pp.transaction_id = t.id AND pp.deleted_at IS NULL),
+                       0
+                   )) as valor_pendente,
+                   CASE WHEN EXISTS(
+                       SELECT 1 FROM partial_payments pp
+                       WHERE pp.transaction_id = t.id AND pp.deleted_at IS NULL
+                   ) THEN 1 ELSE 0 END as is_partial
             FROM {$this->table} t
-            INNER JOIN accounts a ON t.account_id = a.id
+            LEFT JOIN accounts a ON t.account_id = a.id
+            LEFT JOIN credit_cards cr ON t.credit_card_id = cr.id
             LEFT JOIN categories c ON t.category_id = c.id
             LEFT JOIN contacts ct ON t.contact_id = ct.id
-            LEFT JOIN cost_centers cc ON t.cost_center_id = cc.id
             LEFT JOIN users u ON t.created_by = u.id
         ";
         
         $countSelect = "
             SELECT COUNT(*) as total 
             FROM {$this->table} t
-            INNER JOIN accounts a ON t.account_id = a.id
+            LEFT JOIN accounts a ON t.account_id = a.id
+            LEFT JOIN credit_cards cr ON t.credit_card_id = cr.id
             LEFT JOIN categories c ON t.category_id = c.id
             LEFT JOIN contacts ct ON t.contact_id = ct.id
-            LEFT JOIN cost_centers cc ON t.cost_center_id = cc.id
         ";
         
         $totalsSelect = "
             SELECT 
-                SUM(CASE WHEN t.kind IN ('entrada', 'transfer_in') THEN t.valor ELSE 0 END) as total_entradas,
-                SUM(CASE WHEN t.kind IN ('saida', 'transfer_out') THEN t.valor ELSE 0 END) as total_saidas
+                SUM(CASE WHEN t.kind IN ('entrada', 'transfer_in') AND t.credit_card_id IS NULL THEN t.valor ELSE 0 END) as total_entradas,
+                SUM(CASE WHEN t.kind IN ('saida', 'transfer_out') AND t.credit_card_id IS NULL THEN t.valor ELSE 0 END) as total_saidas
             FROM {$this->table} t
-            INNER JOIN accounts a ON t.account_id = a.id
+            LEFT JOIN accounts a ON t.account_id = a.id
+            LEFT JOIN credit_cards cr ON t.credit_card_id = cr.id
             LEFT JOIN categories c ON t.category_id = c.id
             LEFT JOIN contacts ct ON t.contact_id = ct.id
-            LEFT JOIN cost_centers cc ON t.cost_center_id = cc.id
         ";
         
         // Construir WHERE clause
@@ -162,9 +202,10 @@ class Transaction extends BaseModel {
             $params[] = $filters['category_id'];
         }
         
-        if (!empty($filters['cost_center_id'])) {
-            $whereConditions[] = 't.cost_center_id = ?';
-            $params[] = $filters['cost_center_id'];
+        
+        if (!empty($filters['contact_id'])) {
+            $whereConditions[] = 't.contact_id = ?';
+            $params[] = $filters['contact_id'];
         }
         
         if (!empty($filters['status'])) {
@@ -295,6 +336,7 @@ class Transaction extends BaseModel {
             AND YEAR(data_competencia) = ? 
             AND MONTH(data_competencia) = ?
             AND deleted_at IS NULL
+            AND credit_card_id IS NULL
         ";
         $stmt = $this->db->prepare($sql);
         $stmt->execute([$orgId, $year, $month]);
@@ -312,6 +354,7 @@ class Transaction extends BaseModel {
             AND YEAR(data_competencia) = ? 
             AND MONTH(data_competencia) = ?
             AND deleted_at IS NULL
+            AND credit_card_id IS NULL
         ";
         $stmt = $this->db->prepare($sql);
         $stmt->execute([$orgId, $year, $month]);
@@ -331,6 +374,7 @@ class Transaction extends BaseModel {
             AND YEAR(t.data_competencia) = ? 
             AND MONTH(t.data_competencia) = ?
             AND t.deleted_at IS NULL
+            AND t.credit_card_id IS NULL
             GROUP BY a.pessoa_tipo
             ORDER BY a.pessoa_tipo
         ";
@@ -347,6 +391,31 @@ class Transaction extends BaseModel {
         return $organized;
     }
     
+    public function getCreditCardInvoiceTotals($orgId, $year, $month) {
+        $sql = "
+            SELECT 
+                cc.id as credit_card_id,
+                cc.nome as credit_card_name,
+                cc.bandeira,
+                cc.cor,
+                SUM(t.valor) as total_fatura,
+                COUNT(*) as total_transactions
+            FROM {$this->table} t
+            INNER JOIN credit_cards cc ON t.credit_card_id = cc.id
+            WHERE t.org_id = ? 
+            AND YEAR(t.data_competencia) = ? 
+            AND MONTH(t.data_competencia) = ?
+            AND t.deleted_at IS NULL
+            AND t.credit_card_id IS NOT NULL
+            AND t.status IN ('confirmado', 'agendado')
+            GROUP BY cc.id, cc.nome, cc.bandeira, cc.cor
+            ORDER BY cc.nome
+        ";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([$orgId, $year, $month]);
+        return $stmt->fetchAll();
+    }
+    
     public function getMonthlyBalanceByPersonTypeConfirmed($orgId, $year, $month) {
         $sql = "
             SELECT 
@@ -360,6 +429,7 @@ class Transaction extends BaseModel {
             AND YEAR(t.data_competencia) = ? 
             AND MONTH(t.data_competencia) = ?
             AND t.deleted_at IS NULL
+            AND t.credit_card_id IS NULL
             GROUP BY a.pessoa_tipo
             ORDER BY a.pessoa_tipo
         ";
@@ -409,7 +479,10 @@ class Transaction extends BaseModel {
             
             // Se mudou status para confirmado ou valor, recalcular saldo
             $recalculateBalance = false;
-            if ($data['status'] !== $oldData['status'] || $data['valor'] != $oldData['valor']) {
+            $newStatus = $data['status'] ?? $oldData['status'];
+            $newValue = $data['valor'] ?? $oldData['valor'];
+            
+            if ($newStatus !== $oldData['status'] || $newValue != $oldData['valor']) {
                 $recalculateBalance = true;
             }
             
@@ -423,12 +496,19 @@ class Transaction extends BaseModel {
                 }
                 
                 // Aplicar novo saldo se está confirmado
-                if ($data['status'] === 'confirmado') {
-                    $accountId = $data['account_id'] ?? $oldData['account_id'];
+                if ($newStatus === 'confirmado') {
+                    $newAccountId = $data['account_id'] ?? $oldData['account_id'];
                     $kind = $data['kind'] ?? $oldData['kind'];
-                    $valor = $data['valor'] ?? $oldData['valor'];
-                    $this->updateAccountBalance($accountId, $kind, $valor);
+                    $this->updateAccountBalance($newAccountId, $kind, $newValue);
                 }
+            }
+            
+            // Se apenas mudou a conta (sem mudar status ou valor), precisa transferir saldo
+            else if ($success && isset($data['account_id']) && $data['account_id'] !== $oldData['account_id'] && $newStatus === 'confirmado') {
+                // Reverter da conta antiga
+                $this->reverseAccountBalance($oldData['account_id'], $oldData['kind'], $oldData['valor']);
+                // Aplicar na conta nova
+                $this->updateAccountBalance($data['account_id'], $oldData['kind'], $oldData['valor']);
             }
             
             $this->db->commit();
@@ -503,7 +583,7 @@ class Transaction extends BaseModel {
     
     public function getUpcomingScheduledTransactions($orgId, $limit = 10) {
         $sql = "
-            SELECT t.*, 
+            SELECT t.*,
                    a.nome as account_name, a.tipo as account_type,
                    c.nome as category_name, c.cor as category_color
             FROM {$this->table} t
@@ -519,7 +599,110 @@ class Transaction extends BaseModel {
         $stmt->execute([$orgId, $limit]);
         return $stmt->fetchAll();
     }
-    
+
+    public function getMonthlyBalanceWithPartialPayments($orgId, $year, $month) {
+        $sql = "
+            SELECT
+                SUM(CASE
+                    WHEN t.kind IN ('entrada', 'transfer_in') AND (t.status = 'confirmado' OR t.status_pagamento = 'parcial') THEN
+                        CASE
+                            WHEN t.status_pagamento = 'parcial' THEN COALESCE(t.valor_pago, 0)
+                            ELSE t.valor
+                        END
+                    ELSE 0
+                END) as receitas,
+                SUM(CASE
+                    WHEN t.kind IN ('saida', 'transfer_out') AND (t.status = 'confirmado' OR t.status_pagamento = 'parcial') THEN
+                        CASE
+                            WHEN t.status_pagamento = 'parcial' THEN COALESCE(t.valor_pago, 0)
+                            ELSE t.valor
+                        END
+                    ELSE 0
+                END) as despesas,
+                COUNT(CASE WHEN t.status = 'confirmado' OR t.status_pagamento = 'parcial' THEN 1 END) as total_transactions
+            FROM {$this->table} t
+            WHERE t.org_id = ?
+            AND YEAR(t.data_competencia) = ?
+            AND MONTH(t.data_competencia) = ?
+            AND t.deleted_at IS NULL
+            AND t.credit_card_id IS NULL
+        ";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([$orgId, $year, $month]);
+        return $stmt->fetch();
+    }
+
+    public function getDueByDateTransactions($orgId, $date, $limit = 10) {
+        $sql = "
+            SELECT t.*,
+                   a.nome as account_name, a.tipo as account_type,
+                   cc.nome as credit_card_name, cc.bandeira as credit_card_bandeira,
+                   c.nome as category_name, c.tipo as category_type, c.cor as category_color,
+                   ct.nome as contact_name, ct.tipo as contact_type,
+                   u.nome as created_by_name,
+                   -- Campos para baixas parciais
+                   t.valor as valor_original,
+                   COALESCE(
+                       (SELECT SUM(pp.valor)
+                        FROM partial_payments pp
+                        WHERE pp.transaction_id = t.id AND pp.deleted_at IS NULL),
+                       0
+                   ) as valor_pago,
+                   (t.valor - COALESCE(
+                       (SELECT SUM(pp.valor)
+                        FROM partial_payments pp
+                        WHERE pp.transaction_id = t.id AND pp.deleted_at IS NULL),
+                       0
+                   )) as valor_pendente,
+                   CASE WHEN EXISTS(
+                       SELECT 1 FROM partial_payments pp
+                       WHERE pp.transaction_id = t.id AND pp.deleted_at IS NULL
+                   ) THEN 1 ELSE 0 END as is_partial
+            FROM {$this->table} t
+            LEFT JOIN accounts a ON t.account_id = a.id
+            LEFT JOIN credit_cards cc ON t.credit_card_id = cc.id
+            LEFT JOIN categories c ON t.category_id = c.id
+            LEFT JOIN contacts ct ON t.contact_id = ct.id
+            LEFT JOIN users u ON t.created_by = u.id
+            WHERE t.org_id = ?
+            AND DATE(t.data_competencia) = ?
+            AND t.status = 'agendado'
+            AND t.deleted_at IS NULL
+            ORDER BY t.valor DESC
+            LIMIT ?
+        ";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([$orgId, $date, $limit]);
+        return $stmt->fetchAll();
+    }
+
+    public function getDueTodayTransactions($orgId, $limit = 10) {
+        $sql = "
+            SELECT t.*,
+                   a.nome as account_name, a.tipo as account_type,
+                   cc.nome as credit_card_name, cc.bandeira as credit_card_bandeira,
+                   c.nome as category_name, c.cor as category_color,
+                   CASE
+                       WHEN t.data_competencia < CURDATE() AND t.status != 'confirmado' THEN 'vencido'
+                       WHEN t.data_competencia = CURDATE() THEN 'vence_hoje'
+                       ELSE 'futuro'
+                   END as due_status
+            FROM {$this->table} t
+            LEFT JOIN accounts a ON t.account_id = a.id
+            LEFT JOIN credit_cards cc ON t.credit_card_id = cc.id
+            LEFT JOIN categories c ON t.category_id = c.id
+            WHERE t.org_id = ?
+            AND t.data_competencia = CURDATE()
+            AND t.status != 'confirmado'
+            AND t.deleted_at IS NULL
+            ORDER BY t.kind ASC, t.valor DESC
+            LIMIT ?
+        ";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([$orgId, $limit]);
+        return $stmt->fetchAll();
+    }
+
     public function getCategoryExpensesByPersonType($orgId, $year = null, $month = null) {
         $dateFilter = '';
         $params = [$orgId];
@@ -547,6 +730,7 @@ class Transaction extends BaseModel {
             AND t.kind IN ('saida', 'transfer_out')
             AND t.status = 'confirmado'
             AND t.deleted_at IS NULL
+            AND t.credit_card_id IS NULL
             {$dateFilter}
             GROUP BY a.pessoa_tipo, c.id, c.nome, c.cor, c.icone
             HAVING total_gasto > 0
@@ -566,7 +750,7 @@ class Transaction extends BaseModel {
         return $organized;
     }
     
-    public function createTransfer($accountFromId, $accountToId, $valor, $dataCompetencia, $descricao, $observacoes, $userId) {
+    public function createTransfer($accountFromId, $accountToId, $valor, $dataCompetencia, $descricao, $observacoes, $userId, $orgId) {
         // Começar transação do banco
         $this->db->beginTransaction();
         
@@ -576,7 +760,7 @@ class Transaction extends BaseModel {
             
             // Criar lançamento de saída (conta origem)
             $saida = [
-                'org_id' => 1,
+                'org_id' => $orgId,
                 'account_id' => $accountFromId,
                 'kind' => 'transfer_out',
                 'valor' => $valor,
@@ -598,7 +782,7 @@ class Transaction extends BaseModel {
             
             // Criar lançamento de entrada (conta destino)
             $entrada = [
-                'org_id' => 1,
+                'org_id' => $orgId,
                 'account_id' => $accountToId,
                 'kind' => 'transfer_in',
                 'valor' => $valor,
@@ -642,7 +826,7 @@ class Transaction extends BaseModel {
     
     public function getTransferPair($transferPairId) {
         $sql = "
-            SELECT t.*, 
+            SELECT t.*,
                    a.nome as account_name, a.tipo as account_type,
                    c.nome as category_name, c.cor as category_color
             FROM {$this->table} t
@@ -725,7 +909,6 @@ class Transaction extends BaseModel {
                 t.*,
                 c.nome as category_name,
                 c.cor as category_color,
-                cc.nome as cost_center_name,
                 u.nome as created_by_name,
                 -- Para transferências, buscar conta de destino
                 CASE 
@@ -745,7 +928,6 @@ class Transaction extends BaseModel {
                 END as transfer_account_name
             FROM transactions t
             LEFT JOIN categories c ON t.category_id = c.id
-            LEFT JOIN cost_centers cc ON t.cost_center_id = cc.id
             LEFT JOIN users u ON t.created_by = u.id
             WHERE t.account_id = ?
             AND t.data_competencia BETWEEN ? AND ?
@@ -817,5 +999,109 @@ class Transaction extends BaseModel {
         $stmt->execute([$accountId, $startDate, $endDate]);
         $result = $stmt->fetch();
         return $result['total'] ?? 0;
+    }
+    
+    public function updatePartialPayment($transactionId, $valorPago, $orgId) {
+        $this->db->beginTransaction();
+        
+        try {
+            // Buscar dados da transação
+            $transaction = $this->findById($transactionId);
+            if (!$transaction) {
+                throw new Exception("Transação não encontrada");
+            }
+            
+            // Calcular valores (permitir múltiplas baixas)
+            $valorOriginal = $transaction['valor_original'] ?? $transaction['valor'];
+            $valorJaPago = $transaction['valor_pago'] ?? 0;
+            $valorPagoTotal = $valorJaPago + $valorPago;
+            $saldoPendente = $valorOriginal - $valorPagoTotal;
+            
+            // Atualizar a transação com dados de baixa parcial
+            $sql = "UPDATE {$this->table} SET 
+                        valor_original = COALESCE(valor_original, ?),
+                        valor_pago = ?,
+                        is_partial = 1,
+                        valor = ?,
+                        updated_at = NOW()
+                    WHERE id = ? AND org_id = ?";
+            
+            $stmt = $this->db->prepare($sql);
+            $success = $stmt->execute([
+                $valorOriginal,  // Só define valor_original se ainda não existir
+                $valorPagoTotal, // Valor total pago (soma de todas as baixas)
+                $saldoPendente,  // Atualizar valor para o saldo pendente
+                $transactionId,
+                $orgId
+            ]);
+            
+            if (!$success) {
+                throw new Exception("Erro ao atualizar transação");
+            }
+            
+            // Ajustar saldo da conta:
+            // Como a transação estava agendada, aplicamos apenas o valor ADICIONAL pago
+            $kind = $transaction['kind'];
+            if ($kind === 'entrada') {
+                // Para receita: adicionar apenas o valor adicional recebido
+                $this->updateAccountBalance($transaction['account_id'], 'entrada', $valorPago);
+            } else {
+                // Para despesa: subtrair apenas o valor adicional pago
+                $this->updateAccountBalance($transaction['account_id'], 'saida', $valorPago);
+            }
+            
+            $this->db->commit();
+            return true;
+            
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            error_log("Erro ao processar baixa parcial: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    public function searchTransactions($orgId, $searchTerm, $limit = 100) {
+        $searchPattern = '%' . $searchTerm . '%';
+        
+        $sql = "
+            SELECT t.*, 
+                   a.nome as account_name,
+                   c.nome as category_name,
+                   cont.nome as contact_name,
+                   COALESCE(u.nome, u.email) as created_by_name
+            FROM transactions t
+            LEFT JOIN accounts a ON t.account_id = a.id
+            LEFT JOIN categories c ON t.category_id = c.id  
+            LEFT JOIN contacts cont ON t.contact_id = cont.id
+            LEFT JOIN users u ON t.created_by = u.id
+            WHERE t.org_id = ? 
+                AND t.deleted_at IS NULL
+                AND (
+                    t.descricao LIKE ? OR 
+                    t.observacoes LIKE ? OR
+                    a.nome LIKE ? OR
+                    c.nome LIKE ? OR
+                    cont.nome LIKE ? OR
+                    CAST(t.valor AS CHAR) LIKE ? OR
+                    DATE_FORMAT(t.data_competencia, '%d/%m/%Y') LIKE ?
+                )
+            ORDER BY t.created_at DESC
+            LIMIT ?
+        ";
+        
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([
+            $orgId,
+            $searchPattern, // descricao
+            $searchPattern, // observacoes  
+            $searchPattern, // account name
+            $searchPattern, // category name
+            $searchPattern, // contact name
+            $searchPattern, // valor
+            $searchPattern, // data formatada
+            $limit
+        ]);
+        
+        return $stmt->fetchAll();
     }
 }
