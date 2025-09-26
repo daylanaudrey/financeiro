@@ -1,0 +1,120 @@
+/**
+ * Sistema Aduaneiro
+ * Estilos Personalizados
+ */
+
+/* Layout */
+body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+main {
+    flex: 1;
+}
+
+/* Navbar */
+.navbar-brand {
+    font-weight: bold;
+}
+
+/* Forms */
+.form-label {
+    font-weight: 500;
+}
+
+.form-control:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15);
+}
+
+/* Cards */
+.card {
+    border-radius: 0.5rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.card-header {
+    font-weight: 600;
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+}
+
+/* Tables */
+.table-hover tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+/* Buttons */
+.btn {
+    font-weight: 500;
+}
+
+.btn-sm {
+    padding: 0.25rem 0.5rem;
+}
+
+/* Alerts */
+.alert {
+    border-radius: 0.5rem;
+}
+
+/* Login Page */
+.login-container {
+    min-height: 70vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.login-card {
+    width: 100%;
+    max-width: 400px;
+}
+
+/* Dashboard */
+.stat-card {
+    border-left: 4px solid #0d6efd;
+}
+
+.stat-card .card-body {
+    padding: 1.5rem;
+}
+
+.stat-number {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #0d6efd;
+}
+
+.stat-label {
+    color: #6c757d;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+}
+
+/* Process Status */
+.badge-status-draft {
+    background-color: #6c757d;
+}
+
+.badge-status-processing {
+    background-color: #ffc107;
+}
+
+.badge-status-completed {
+    background-color: #28a745;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .table-responsive {
+        font-size: 0.875rem;
+    }
+
+    .btn-group-sm > .btn {
+        padding: 0.2rem 0.4rem;
+        font-size: 0.75rem;
+    }
+}

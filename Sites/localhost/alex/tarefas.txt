@@ -1,0 +1,7 @@
+ler as regras CLAUDE.md use MCP para testar.
+
+quando vai criar um produto, paarecer o erro em RFB Padrão (Todos os Portos)
+Users/daylan/Sites/localhost/alex/app/Views/products/form.php on line
+209
+
+" placeholder="0,00">
