@@ -1,0 +1,660 @@
+-- dag_financeiro.integration_configs definition
+
+CREATE TABLE `integration_configs` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `organization_id` int(11) NOT NULL DEFAULT '1',
+  `integration_type` varchar(50) NOT NULL,
+  `config_key` varchar(100) NOT NULL,
+  `config_value` text NOT NULL,
+  `is_encrypted` tinyint(1) DEFAULT '0',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_org_integration_key` (`organization_id`,`integration_type`,`config_key`),
+  KEY `idx_org_integration` (`organization_id`,`integration_type`)
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4;
+
+
+-- dag_financeiro.organizations definition
+
+CREATE TABLE `organizations` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `pessoa_tipo` enum('PF','PJ') NOT NULL DEFAULT 'PJ',
+  `nome` varchar(255) NOT NULL,
+  `cnpj` varchar(18) DEFAULT NULL,
+  `email` varchar(255) DEFAULT NULL,
+  `telefone` varchar(20) DEFAULT NULL,
+  `endereco` text,
+  `status` enum('ativa','inativa') DEFAULT 'ativa',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_cnpj` (`cnpj`),
+  KEY `idx_status` (`status`),
+  KEY `idx_deleted_at` (`deleted_at`)
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4;
+
+
+-- dag_financeiro.subscription_plans definition
+
+CREATE TABLE `subscription_plans` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `nome` varchar(255) NOT NULL,
+  `slug` varchar(100) NOT NULL,
+  `descricao` text,
+  `preco` decimal(10,2) NOT NULL DEFAULT '0.00',
+  `moeda` varchar(3) DEFAULT 'BRL',
+  `periodo` enum('mensal','anual') DEFAULT 'mensal',
+  `max_usuarios` int(11) DEFAULT NULL COMMENT 'NULL = ilimitado',
+  `max_transacoes` int(11) DEFAULT NULL COMMENT 'NULL = ilimitado',
+  `max_organizacoes` int(11) DEFAULT '1',
+  `trial_days` int(11) DEFAULT '0',
+  `features` json DEFAULT NULL COMMENT 'Recursos disponíveis no plano',
+  `ativo` tinyint(1) DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `slug` (`slug`),
+  KEY `idx_slug` (`slug`),
+  KEY `idx_ativo` (`ativo`)
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4;
+
+
+-- dag_financeiro.system_configs definition
+
+CREATE TABLE `system_configs` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `key_name` varchar(255) NOT NULL,
+  `key_value` text,
+  `description` text,
+  `type` enum('string','integer','boolean','json') DEFAULT 'string',
+  `is_public` tinyint(1) DEFAULT '0' COMMENT 'Se pode ser acessado pelo frontend',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `key_name` (`key_name`),
+  KEY `idx_key_name` (`key_name`),
+  KEY `idx_is_public` (`is_public`)
+) ENGINE=InnoDB AUTO_INCREMENT=16 DEFAULT CHARSET=utf8mb4;
+
+
+-- dag_financeiro.users definition
+
+CREATE TABLE `users` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `nome` varchar(255) NOT NULL,
+  `email` varchar(255) NOT NULL,
+  `telefone` varchar(20) DEFAULT NULL,
+  `whatsapp_number` varchar(20) DEFAULT NULL,
+  `email_verification_token` varchar(255) DEFAULT NULL,
+  `password` varchar(255) NOT NULL,
+  `status` enum('ativo','inativo','pendente') DEFAULT 'ativo',
+  `role` enum('admin','financeiro','operador','leitor') DEFAULT 'operador',
+  `email_verified_at` timestamp NULL DEFAULT NULL,
+  `email_verification_sent_at` timestamp NULL DEFAULT NULL,
+  `temp_org_name` varchar(255) DEFAULT NULL,
+  `remember_token` varchar(100) DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `email` (`email`),
+  KEY `idx_email` (`email`),
+  KEY `idx_status` (`status`),
+  KEY `idx_deleted_at` (`deleted_at`)
+) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8mb4;
+
+
+-- dag_financeiro.accounts definition
+
+CREATE TABLE `accounts` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `org_id` int(11) NOT NULL,
+  `pessoa_tipo` enum('PF','PJ') NOT NULL DEFAULT 'PF',
+  `nome` varchar(255) NOT NULL,
+  `razao_social` varchar(255) DEFAULT NULL,
+  `cnpj` varchar(18) DEFAULT NULL,
+  `inscricao_estadual` varchar(20) DEFAULT NULL,
+  `cpf` varchar(14) DEFAULT NULL,
+  `tipo` enum('corrente','poupanca','carteira','cartao_prepago','vault') NOT NULL,
+  `banco` varchar(255) DEFAULT NULL,
+  `agencia` varchar(20) DEFAULT NULL,
+  `conta` varchar(30) DEFAULT NULL,
+  `moeda` varchar(3) DEFAULT 'BRL',
+  `saldo_inicial` decimal(15,2) DEFAULT '0.00',
+  `saldo_atual` decimal(15,2) DEFAULT '0.00',
+  `ativo` tinyint(1) DEFAULT '1',
+  `descricao` text,
+  `cor` varchar(7) DEFAULT '#007bff',
+  `created_by` int(11) DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `created_by` (`created_by`),
+  KEY `idx_org_id` (`org_id`),
+  KEY `idx_tipo` (`tipo`),
+  KEY `idx_ativo` (`ativo`),
+  KEY `idx_deleted_at` (`deleted_at`),
+  KEY `idx_pessoa_tipo` (`pessoa_tipo`),
+  KEY `idx_cnpj` (`cnpj`),
+  KEY `idx_cpf` (`cpf`),
+  CONSTRAINT `accounts_ibfk_1` FOREIGN KEY (`org_id`) REFERENCES `organizations` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `accounts_ibfk_2` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB AUTO_INCREMENT=27 DEFAULT CHARSET=utf8mb4;
+
+
+-- dag_financeiro.audit_logs definition
+
+CREATE TABLE `audit_logs` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `org_id` int(11) DEFAULT NULL,
+  `user_id` int(11) DEFAULT NULL,
+  `entity` varchar(100) NOT NULL,
+  `entity_id` int(11) DEFAULT NULL,
+  `action` enum('create','update','delete','login','logout','view','launch','transfer') NOT NULL,
+  `old_values` json DEFAULT NULL,
+  `new_values` json DEFAULT NULL,
+  `description` text,
+  `ip_address` varchar(45) DEFAULT NULL,
+  `user_agent` text,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_user_id` (`user_id`),
+  KEY `idx_org_id` (`org_id`),
+  KEY `idx_entity` (`entity`),
+  KEY `idx_action` (`action`),
+  KEY `idx_created_at` (`created_at`),
+  CONSTRAINT `audit_logs_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `audit_logs_ibfk_2` FOREIGN KEY (`org_id`) REFERENCES `organizations` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB AUTO_INCREMENT=491 DEFAULT CHARSET=utf8mb4;
+
+
+-- dag_financeiro.categories definition
+
+CREATE TABLE `categories` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `org_id` int(11) NOT NULL,
+  `nome` varchar(255) NOT NULL,
+  `tipo` enum('receita','despesa') NOT NULL,
+  `parent_id` int(11) DEFAULT NULL,
+  `cor` varchar(7) DEFAULT '#6c757d',
+  `icone` varchar(50) DEFAULT 'fas fa-tag',
+  `ativo` tinyint(1) DEFAULT '1',
+  `created_by` int(11) DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  `descricao` text,
+  PRIMARY KEY (`id`),
+  KEY `created_by` (`created_by`),
+  KEY `idx_org_id` (`org_id`),
+  KEY `idx_tipo` (`tipo`),
+  KEY `idx_parent_id` (`parent_id`),
+  KEY `idx_ativo` (`ativo`),
+  KEY `idx_deleted_at` (`deleted_at`),
+  CONSTRAINT `categories_ibfk_1` FOREIGN KEY (`org_id`) REFERENCES `organizations` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `categories_ibfk_2` FOREIGN KEY (`parent_id`) REFERENCES `categories` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `categories_ibfk_3` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB AUTO_INCREMENT=53 DEFAULT CHARSET=utf8mb4;
+
+
+-- dag_financeiro.contacts definition
+
+CREATE TABLE `contacts` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `org_id` int(11) NOT NULL,
+  `nome` varchar(255) NOT NULL,
+  `tipo` enum('fornecedor','cliente','ambos') NOT NULL,
+  `documento` varchar(20) DEFAULT NULL,
+  `email` varchar(255) DEFAULT NULL,
+  `telefone` varchar(20) DEFAULT NULL,
+  `endereco` text,
+  `observacoes` text,
+  `tags` json DEFAULT NULL,
+  `ativo` tinyint(1) DEFAULT '1',
+  `created_by` int(11) DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `created_by` (`created_by`),
+  KEY `idx_org_id` (`org_id`),
+  KEY `idx_tipo` (`tipo`),
+  KEY `idx_documento` (`documento`),
+  KEY `idx_ativo` (`ativo`),
+  KEY `idx_deleted_at` (`deleted_at`),
+  CONSTRAINT `contacts_ibfk_1` FOREIGN KEY (`org_id`) REFERENCES `organizations` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `contacts_ibfk_2` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4;
+
+
+-- dag_financeiro.cost_centers definition
+
+CREATE TABLE `cost_centers` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `org_id` int(11) NOT NULL,
+  `codigo` varchar(20) NOT NULL,
+  `nome` varchar(255) NOT NULL,
+  `descricao` text,
+  `parent_id` int(11) DEFAULT NULL,
+  `nivel` int(11) DEFAULT '1',
+  `caminho` varchar(500) DEFAULT NULL,
+  `cor` varchar(7) DEFAULT '#6c757d',
+  `icone` varchar(50) DEFAULT 'fas fa-building',
+  `ativo` tinyint(1) DEFAULT '1',
+  `created_by` int(11) DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_org_codigo` (`org_id`,`codigo`),
+  KEY `created_by` (`created_by`),
+  KEY `idx_org_id` (`org_id`),
+  KEY `idx_codigo` (`codigo`),
+  KEY `idx_parent_id` (`parent_id`),
+  KEY `idx_nivel` (`nivel`),
+  KEY `idx_ativo` (`ativo`),
+  KEY `idx_deleted_at` (`deleted_at`),
+  CONSTRAINT `cost_centers_ibfk_1` FOREIGN KEY (`org_id`) REFERENCES `organizations` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `cost_centers_ibfk_2` FOREIGN KEY (`parent_id`) REFERENCES `cost_centers` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `cost_centers_ibfk_3` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4;
+
+
+-- dag_financeiro.credit_cards definition
+
+CREATE TABLE `credit_cards` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `org_id` int(11) NOT NULL,
+  `nome` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Nome do cartão (ex: Nubank, Santander)',
+  `bandeira` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Visa, Mastercard, etc',
+  `limite_total` decimal(15,2) NOT NULL DEFAULT '0.00' COMMENT 'Limite total do cartão',
+  `limite_usado` decimal(15,2) NOT NULL DEFAULT '0.00' COMMENT 'Valor já utilizado',
+  `dia_vencimento` int(2) NOT NULL COMMENT 'Dia do mês que vence (1-31)',
+  `dia_fechamento` int(2) NOT NULL COMMENT 'Dia que fecha a fatura (1-31)',
+  `banco` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Banco emissor',
+  `ultimos_digitos` varchar(4) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Últimos 4 dígitos',
+  `cor` varchar(7) COLLATE utf8mb4_unicode_ci DEFAULT '#6c757d' COMMENT 'Cor para identificação',
+  `observacoes` text COLLATE utf8mb4_unicode_ci,
+  `ativo` tinyint(1) NOT NULL DEFAULT '1',
+  `created_by` int(11) NOT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_org_id` (`org_id`),
+  KEY `idx_ativo` (`ativo`),
+  KEY `idx_deleted_at` (`deleted_at`),
+  KEY `fk_credit_cards_created_by` (`created_by`),
+  CONSTRAINT `fk_credit_cards_created_by` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`),
+  CONSTRAINT `fk_credit_cards_org` FOREIGN KEY (`org_id`) REFERENCES `organizations` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Cartões de crédito';
+
+
+-- dag_financeiro.dashboard_layout_preferences definition
+
+CREATE TABLE `dashboard_layout_preferences` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) NOT NULL,
+  `organization_id` int(11) NOT NULL,
+  `widget_order` json NOT NULL,
+  `custom_settings` json DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_user_org` (`user_id`,`organization_id`),
+  KEY `organization_id` (`organization_id`),
+  CONSTRAINT `dashboard_layout_preferences_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `dashboard_layout_preferences_ibfk_2` FOREIGN KEY (`organization_id`) REFERENCES `organizations` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4;
+
+
+-- dag_financeiro.notification_history definition
+
+CREATE TABLE `notification_history` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) NOT NULL,
+  `org_id` int(11) NOT NULL,
+  `notification_type` enum('new_transaction','upcoming_due','low_balance','goal_reached','overdue_transaction','weekly_summary','monthly_summary','system_alert') COLLATE utf8mb4_unicode_ci NOT NULL,
+  `delivery_method` enum('desktop','email','sms','app','whatsapp') COLLATE utf8mb4_unicode_ci NOT NULL,
+  `title` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `message` text COLLATE utf8mb4_unicode_ci,
+  `related_entity_type` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `related_entity_id` int(11) DEFAULT NULL,
+  `status` enum('sent','delivered','failed','clicked') COLLATE utf8mb4_unicode_ci DEFAULT 'sent',
+  `sent_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `delivered_at` timestamp NULL DEFAULT NULL,
+  `clicked_at` timestamp NULL DEFAULT NULL,
+  `error_message` text COLLATE utf8mb4_unicode_ci,
+  `notification_data` json DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `org_id` (`org_id`),
+  KEY `idx_notification_history_user_org` (`user_id`,`org_id`),
+  KEY `idx_notification_history_type` (`notification_type`),
+  KEY `idx_notification_history_status` (`status`),
+  KEY `idx_notification_history_sent_at` (`sent_at`),
+  CONSTRAINT `notification_history_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `notification_history_ibfk_2` FOREIGN KEY (`org_id`) REFERENCES `organizations` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=279 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- dag_financeiro.notification_preferences definition
+
+CREATE TABLE `notification_preferences` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) NOT NULL,
+  `org_id` int(11) NOT NULL,
+  `enable_desktop_notifications` tinyint(1) DEFAULT '1',
+  `enable_email_notifications` tinyint(1) DEFAULT '1',
+  `enable_sms_notifications` tinyint(1) DEFAULT '0',
+  `enable_whatsapp_notifications` tinyint(1) DEFAULT '0',
+  `enable_app_notifications` tinyint(1) DEFAULT '1',
+  `notify_new_transactions` tinyint(1) DEFAULT '1',
+  `notify_upcoming_due_dates` tinyint(1) DEFAULT '1',
+  `notify_low_balance` tinyint(1) DEFAULT '1',
+  `notify_goal_reached` tinyint(1) DEFAULT '1',
+  `notify_overdue_transactions` tinyint(1) DEFAULT '1',
+  `notify_weekly_summary` tinyint(1) DEFAULT '1',
+  `notify_monthly_summary` tinyint(1) DEFAULT '1',
+  `due_date_reminder_days` varchar(50) DEFAULT '3',
+  `low_balance_threshold` decimal(10,2) DEFAULT '100.00',
+  `quiet_hours_start` time DEFAULT '22:00:00',
+  `quiet_hours_end` time DEFAULT '08:00:00',
+  `enable_quiet_hours` tinyint(1) DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_user_org` (`user_id`,`org_id`),
+  KEY `org_id` (`org_id`),
+  KEY `idx_notification_prefs_user_org` (`user_id`,`org_id`),
+  KEY `idx_notification_prefs_desktop` (`enable_desktop_notifications`),
+  CONSTRAINT `notification_preferences_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `notification_preferences_ibfk_2` FOREIGN KEY (`org_id`) REFERENCES `organizations` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4;
+
+
+-- dag_financeiro.organization_invites definition
+
+CREATE TABLE `organization_invites` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `org_id` int(11) NOT NULL,
+  `email` varchar(255) NOT NULL,
+  `role` enum('admin','financeiro','operador','leitor') NOT NULL,
+  `token` varchar(100) NOT NULL,
+  `invited_by` int(11) NOT NULL,
+  `accepted_at` datetime DEFAULT NULL,
+  `expires_at` datetime NOT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `token` (`token`),
+  KEY `invited_by` (`invited_by`),
+  KEY `idx_org_id` (`org_id`),
+  KEY `idx_email` (`email`),
+  KEY `idx_token` (`token`),
+  KEY `idx_expires_at` (`expires_at`),
+  CONSTRAINT `organization_invites_ibfk_1` FOREIGN KEY (`org_id`) REFERENCES `organizations` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `organization_invites_ibfk_2` FOREIGN KEY (`invited_by`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+
+-- dag_financeiro.organization_subscriptions definition
+
+CREATE TABLE `organization_subscriptions` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `org_id` int(11) NOT NULL,
+  `plan_id` int(11) NOT NULL,
+  `status` enum('trial','active','suspended','cancelled','expired') DEFAULT 'trial',
+  `trial_ends_at` datetime DEFAULT NULL,
+  `current_period_start` datetime NOT NULL,
+  `current_period_end` datetime NOT NULL,
+  `cancelled_at` datetime DEFAULT NULL,
+  `cancel_reason` text,
+  `uso_usuarios` int(11) DEFAULT '0',
+  `uso_transacoes` int(11) DEFAULT '0',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_org_id` (`org_id`),
+  KEY `idx_plan_id` (`plan_id`),
+  KEY `idx_status` (`status`),
+  KEY `idx_trial_ends_at` (`trial_ends_at`),
+  KEY `idx_current_period_end` (`current_period_end`),
+  CONSTRAINT `organization_subscriptions_ibfk_1` FOREIGN KEY (`org_id`) REFERENCES `organizations` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `organization_subscriptions_ibfk_2` FOREIGN KEY (`plan_id`) REFERENCES `subscription_plans` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4;
+
+
+-- dag_financeiro.subscription_payments definition
+
+CREATE TABLE `subscription_payments` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `subscription_id` int(11) NOT NULL,
+  `valor` decimal(10,2) NOT NULL,
+  `moeda` varchar(3) DEFAULT 'BRL',
+  `status` enum('pending','paid','failed','refunded') DEFAULT 'pending',
+  `payment_method` varchar(100) DEFAULT NULL,
+  `external_id` varchar(255) DEFAULT NULL COMMENT 'ID do gateway de pagamento',
+  `paid_at` datetime DEFAULT NULL,
+  `due_date` datetime NOT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_subscription_id` (`subscription_id`),
+  KEY `idx_status` (`status`),
+  KEY `idx_due_date` (`due_date`),
+  KEY `idx_external_id` (`external_id`),
+  CONSTRAINT `subscription_payments_ibfk_1` FOREIGN KEY (`subscription_id`) REFERENCES `organization_subscriptions` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+
+-- dag_financeiro.transactions definition
+
+CREATE TABLE `transactions` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `org_id` int(11) NOT NULL,
+  `account_id` int(11) DEFAULT NULL,
+  `credit_card_id` int(11) DEFAULT NULL,
+  `kind` enum('entrada','saida','transfer_out','transfer_in') NOT NULL,
+  `valor` decimal(15,2) NOT NULL,
+  `moeda` varchar(3) DEFAULT 'BRL',
+  `data_competencia` date NOT NULL,
+  `data_pagamento` date DEFAULT NULL,
+  `status` enum('rascunho','agendado','confirmado','cancelado') DEFAULT 'confirmado',
+  `category_id` int(11) DEFAULT NULL,
+  `contact_id` int(11) DEFAULT NULL,
+  `cost_center_id` int(11) DEFAULT NULL,
+  `descricao` text NOT NULL,
+  `observacoes` text,
+  `recurrence_type` enum('weekly','monthly','quarterly','biannual','yearly') DEFAULT NULL,
+  `recurrence_count` int(11) DEFAULT '1',
+  `recurrence_end_date` date DEFAULT NULL,
+  `parent_transaction_id` int(11) DEFAULT NULL,
+  `recurrence_sequence` int(11) DEFAULT '1',
+  `attachment_url` varchar(500) DEFAULT NULL,
+  `recurrence_instance_id` int(11) DEFAULT NULL,
+  `transfer_pair_id` int(11) DEFAULT NULL,
+  `created_by` int(11) DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  `valor_original` decimal(15,2) DEFAULT NULL,
+  `valor_pago` decimal(15,2) DEFAULT '0.00',
+  `is_partial` tinyint(1) DEFAULT '0',
+  `valor_pendente` decimal(15,2) DEFAULT NULL COMMENT 'Valor ainda pendente (calculado)',
+  `permite_baixa_parcial` tinyint(1) DEFAULT '0' COMMENT 'Se permite pagamento parcial',
+  `status_pagamento` enum('pendente','parcial','quitado') DEFAULT 'pendente' COMMENT 'Status do pagamento',
+  PRIMARY KEY (`id`),
+  KEY `created_by` (`created_by`),
+  KEY `idx_org_id` (`org_id`),
+  KEY `idx_account_id` (`account_id`),
+  KEY `idx_kind` (`kind`),
+  KEY `idx_status` (`status`),
+  KEY `idx_data_competencia` (`data_competencia`),
+  KEY `idx_data_pagamento` (`data_pagamento`),
+  KEY `idx_category_id` (`category_id`),
+  KEY `idx_contact_id` (`contact_id`),
+  KEY `idx_transfer_pair_id` (`transfer_pair_id`),
+  KEY `idx_deleted_at` (`deleted_at`),
+  KEY `idx_recurrence_type` (`recurrence_type`),
+  KEY `idx_parent_transaction_id` (`parent_transaction_id`),
+  KEY `idx_cost_center_id` (`cost_center_id`),
+  KEY `idx_credit_card_id` (`credit_card_id`),
+  KEY `idx_transactions_status_pagamento` (`status_pagamento`),
+  KEY `idx_transactions_permite_baixa` (`permite_baixa_parcial`),
+  CONSTRAINT `fk_transactions_cost_center` FOREIGN KEY (`cost_center_id`) REFERENCES `cost_centers` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_transactions_credit_card` FOREIGN KEY (`credit_card_id`) REFERENCES `credit_cards` (`id`),
+  CONSTRAINT `fk_transactions_credit_card_id` FOREIGN KEY (`credit_card_id`) REFERENCES `credit_cards` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `transactions_ibfk_1` FOREIGN KEY (`org_id`) REFERENCES `organizations` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `transactions_ibfk_2` FOREIGN KEY (`account_id`) REFERENCES `accounts` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `transactions_ibfk_3` FOREIGN KEY (`category_id`) REFERENCES `categories` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `transactions_ibfk_4` FOREIGN KEY (`contact_id`) REFERENCES `contacts` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `transactions_ibfk_5` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `transactions_ibfk_6` FOREIGN KEY (`parent_transaction_id`) REFERENCES `transactions` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=518 DEFAULT CHARSET=utf8mb4;
+
+
+-- dag_financeiro.user_org_roles definition
+
+CREATE TABLE `user_org_roles` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) NOT NULL,
+  `org_id` int(11) NOT NULL,
+  `role` enum('admin','financeiro','operador','leitor') NOT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_user_org` (`user_id`,`org_id`),
+  KEY `idx_user_id` (`user_id`),
+  KEY `idx_org_id` (`org_id`),
+  KEY `idx_role` (`role`),
+  CONSTRAINT `user_org_roles_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `user_org_roles_ibfk_2` FOREIGN KEY (`org_id`) REFERENCES `organizations` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4;
+
+
+-- dag_financeiro.user_permissions definition
+
+CREATE TABLE `user_permissions` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) NOT NULL,
+  `org_id` int(11) NOT NULL,
+  `module` varchar(100) NOT NULL COMMENT 'dashboard, transactions, accounts, etc',
+  `permission` enum('view','create','edit','delete','export') NOT NULL,
+  `granted` tinyint(1) DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_user_org_module_permission` (`user_id`,`org_id`,`module`,`permission`),
+  KEY `idx_user_id` (`user_id`),
+  KEY `idx_org_id` (`org_id`),
+  KEY `idx_module` (`module`),
+  CONSTRAINT `user_permissions_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `user_permissions_ibfk_2` FOREIGN KEY (`org_id`) REFERENCES `organizations` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+
+-- dag_financeiro.user_sessions definition
+
+CREATE TABLE `user_sessions` (
+  `id` varchar(128) NOT NULL,
+  `user_id` int(11) DEFAULT NULL,
+  `ip_address` varchar(45) DEFAULT NULL,
+  `user_agent` text,
+  `payload` text NOT NULL,
+  `last_activity` int(11) NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_user_id` (`user_id`),
+  KEY `idx_last_activity` (`last_activity`),
+  CONSTRAINT `user_sessions_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+
+-- dag_financeiro.vault_goals definition
+
+CREATE TABLE `vault_goals` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `org_id` int(11) NOT NULL DEFAULT '1',
+  `titulo` varchar(255) NOT NULL,
+  `descricao` text,
+  `valor_meta` decimal(15,2) NOT NULL,
+  `valor_atual` decimal(15,2) DEFAULT '0.00',
+  `data_meta` date DEFAULT NULL,
+  `categoria` enum('emergencia','viagem','compra','investimento','educacao','saude','casa','veiculo','aposentadoria','outros') DEFAULT 'outros',
+  `cor` varchar(7) DEFAULT '#007bff',
+  `icone` varchar(50) DEFAULT 'fas fa-bullseye',
+  `prioridade` enum('baixa','media','alta') DEFAULT 'media',
+  `ativo` tinyint(1) DEFAULT '1',
+  `concluido` tinyint(1) DEFAULT '0',
+  `data_conclusao` date DEFAULT NULL,
+  `created_by` int(11) DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `created_by` (`created_by`),
+  KEY `idx_categoria` (`categoria`),
+  KEY `idx_prioridade` (`prioridade`),
+  KEY `idx_ativo` (`ativo`),
+  KEY `idx_concluido` (`concluido`),
+  KEY `idx_deleted_at` (`deleted_at`),
+  KEY `idx_org_id` (`org_id`),
+  CONSTRAINT `vault_goals_ibfk_2` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4;
+
+
+-- dag_financeiro.vault_movements definition
+
+CREATE TABLE `vault_movements` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `vault_goal_id` int(11) NOT NULL,
+  `transaction_id` int(11) NOT NULL,
+  `tipo` enum('deposito','retirada') NOT NULL,
+  `valor` decimal(15,2) NOT NULL,
+  `descricao` text,
+  `data_movimento` date NOT NULL,
+  `created_by` int(11) DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `created_by` (`created_by`),
+  KEY `idx_vault_goal_id` (`vault_goal_id`),
+  KEY `idx_transaction_id` (`transaction_id`),
+  KEY `idx_tipo` (`tipo`),
+  KEY `idx_data_movimento` (`data_movimento`),
+  KEY `idx_deleted_at` (`deleted_at`),
+  CONSTRAINT `vault_movements_ibfk_1` FOREIGN KEY (`vault_goal_id`) REFERENCES `vault_goals` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `vault_movements_ibfk_2` FOREIGN KEY (`transaction_id`) REFERENCES `transactions` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `vault_movements_ibfk_3` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4;
+
+
+-- dag_financeiro.partial_payments definition
+
+CREATE TABLE `partial_payments` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `org_id` int(11) NOT NULL,
+  `transaction_id` int(11) NOT NULL,
+  `account_id` int(11) NOT NULL COMMENT 'Conta de onde sai/entra o dinheiro',
+  `valor` decimal(15,2) NOT NULL COMMENT 'Valor da baixa parcial',
+  `data_pagamento` date NOT NULL,
+  `descricao` varchar(500) DEFAULT NULL COMMENT 'Observações sobre esta baixa',
+  `created_by` int(11) DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `created_by` (`created_by`),
+  KEY `idx_org_id` (`org_id`),
+  KEY `idx_transaction_id` (`transaction_id`),
+  KEY `idx_account_id` (`account_id`),
+  KEY `idx_data_pagamento` (`data_pagamento`),
+  KEY `idx_deleted_at` (`deleted_at`),
+  CONSTRAINT `partial_payments_ibfk_1` FOREIGN KEY (`org_id`) REFERENCES `organizations` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `partial_payments_ibfk_2` FOREIGN KEY (`transaction_id`) REFERENCES `transactions` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `partial_payments_ibfk_3` FOREIGN KEY (`account_id`) REFERENCES `accounts` (`id`),
+  CONSTRAINT `partial_payments_ibfk_4` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB AUTO_INCREMENT=23 DEFAULT CHARSET=utf8mb4;

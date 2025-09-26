@@ -99,6 +99,17 @@
                                 </label>
                             </div>
                             
+                            <div class="form-floating mb-3">
+                                <input type="text" class="form-control" id="organization_name" name="organization_name" placeholder="Nome da Organização" required>
+                                <label for="organization_name">
+                                    <i class="fas fa-building me-2"></i>
+                                    Nome da Organização
+                                </label>
+                                <div class="form-text mt-1">
+                                    <small class="text-muted">Ex: Minha Empresa, João Silva ME, etc.</small>
+                                </div>
+                            </div>
+                            
                             <div class="form-floating mb-3 position-relative">
                                 <input type="password" class="form-control" id="password" name="password" placeholder="Senha" required minlength="6">
                                 <label for="password">

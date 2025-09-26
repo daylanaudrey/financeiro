@@ -1,5 +1,9 @@
 RewriteEngine On
 
+# Permitir acesso direto aos arquivos de assets (CSS, JS, imagens)
+RewriteCond %{REQUEST_URI} ^/assets/.*$
+RewriteRule ^(.*)$ - [L]
+
 # Redirecionar tudo para index.php, exceto arquivos e diretórios que existem
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d

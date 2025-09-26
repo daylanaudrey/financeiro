@@ -21,7 +21,7 @@
     <link rel="mask-icon" href="/assets/icons/icon-512x512.png" color="#007bff">
     
     <!-- PWA Manifest -->
-    <link rel="manifest" href="/manifest.json">
+    <link rel="manifest" href="/financeiro/manifest.json">
     
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -32,7 +32,7 @@
     <!-- Select2 -->
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
     <!-- CSS Local -->
-    <link href="<?= url('/assets/css/style.css') ?>" rel="stylesheet">
+    <link href="<?= url('assets/css/style.css') ?>" rel="stylesheet">
     
     <style>
         :root {
@@ -216,11 +216,13 @@
             font-size: 2.5rem;
             font-weight: 700;
             margin-bottom: 0.5rem;
+            color: white !important;
         }
         
         .stat-card h6 {
             font-weight: 600;
             opacity: 0.9;
+            color: white !important;
         }
         
         .stat-card .stat-icon {
@@ -284,6 +286,91 @@
         .btn-danger {
             background: linear-gradient(135deg, var(--danger-color) 0%, #dc2626 100%);
             border: none;
+        }
+        
+        /* Outline button styles */
+        .btn-outline-primary {
+            color: var(--primary-color);
+            border: 2px solid var(--primary-color);
+            background: transparent;
+        }
+        
+        .btn-outline-primary:hover {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+        
+        .btn-outline-secondary {
+            color: #6c757d;
+            border: 2px solid #6c757d;
+            background: transparent;
+        }
+        
+        .btn-outline-secondary:hover {
+            background: #6c757d;
+            color: white;
+            border-color: #6c757d;
+        }
+        
+        .btn-outline-success {
+            color: var(--accent-color);
+            border: 2px solid var(--accent-color);
+            background: transparent;
+        }
+        
+        .btn-outline-success:hover {
+            background: var(--accent-color);
+            color: white;
+            border-color: var(--accent-color);
+        }
+        
+        .btn-outline-danger {
+            color: var(--danger-color);
+            border: 2px solid var(--danger-color);
+            background: transparent;
+        }
+        
+        .btn-outline-danger:hover {
+            background: var(--danger-color);
+            color: white;
+            border-color: var(--danger-color);
+        }
+        
+        .btn-outline-info {
+            color: #17a2b8;
+            border: 2px solid #17a2b8;
+            background: transparent;
+        }
+        
+        .btn-outline-info:hover {
+            background: #17a2b8;
+            color: white;
+            border-color: #17a2b8;
+        }
+        
+        .btn-outline-warning {
+            color: var(--warning-color);
+            border: 2px solid var(--warning-color);
+            background: transparent;
+        }
+        
+        .btn-outline-warning:hover {
+            background: var(--warning-color);
+            color: white;
+            border-color: var(--warning-color);
+        }
+        
+        .btn-outline-light {
+            color: #f8f9fa;
+            border: 2px solid #f8f9fa;
+            background: transparent;
+        }
+        
+        .btn-outline-light:hover {
+            background: #f8f9fa;
+            color: #212529;
+            border-color: #f8f9fa;
         }
         
         .empty-state {
@@ -414,9 +501,37 @@
             opacity: 0.65;
             transform: scale(0.85) translateY(-0.5rem) translateX(0.15rem);
         }
+        
+        @media (max-width: 768px) {
+            /* Manter apenas responsividade básica para telas pequenas */
+            .modal-dialog {
+                margin: 10px;
+                max-width: calc(100% - 20px);
+            }
+            
+            .modal-body {
+                padding: 1rem;
+            }
+            
+            /* Forms responsivos */
+            .form-floating {
+                margin-bottom: 1rem;
+            }
+            
+            .btn {
+                padding: 0.6rem 1rem;
+                font-size: 0.9rem;
+            }
+            
+            /* Esconder elementos desnecessários no mobile */
+            .d-mobile-none {
+                display: none !important;
+            }
+        }
+        
     </style>
 </head>
-<body>
+<body data-user-logged-in="<?= isset($_SESSION['logged_in']) && $_SESSION['logged_in'] ? 'true' : 'false' ?>">
     <div class="container-fluid">
         <div class="row">
             <!-- Sidebar -->
@@ -446,8 +561,8 @@
                                 </div>
                             </div>
                         </div>
-                        <a href="<?= url('/logout') ?>" class="btn btn-sm w-100" style="background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.2);">
-                            <i class="fas fa-sign-out-alt me-2"></i>
+                        <a href="<?= url('/logout') ?>" class="btn btn-sm w-100" style="background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.2); font-size: 0.8rem; padding: 0.4rem 0.8rem;">
+                            <i class="fas fa-sign-out-alt me-1" style="font-size: 0.7rem;"></i>
                             Sair
                         </a>
                     </div>
@@ -467,35 +582,56 @@
                         <i class="fas fa-list me-2"></i>
                         Lançamentos
                     </a>
+                    <a class="nav-link <?= ($page ?? '') === 'credit-cards' ? 'active' : '' ?>" href="<?= url('/credit-cards') ?>">
+                        <i class="fas fa-credit-card me-2"></i>
+                        Cartões de Crédito
+                    </a>
+                    <a class="nav-link <?= ($page ?? '') === 'contacts' ? 'active' : '' ?>" href="<?= url('/contacts') ?>">
+                        <i class="fas fa-address-book me-2"></i>
+                        Contatos
+                    </a>
                     <a class="nav-link <?= ($page ?? '') === 'transfers' ? 'active' : '' ?>" href="<?= url('/transfers') ?>">
                         <i class="fas fa-exchange-alt me-2"></i>
                         Transferências
                     </a>
                     <a class="nav-link <?= ($page ?? '') === 'vaults' ? 'active' : '' ?>" href="<?= url('/vaults') ?>">
                         <i class="fas fa-bullseye me-2"></i>
-                        Vaults e Objetivos
+                        Caixinhas e Objetivos
                     </a>
                     <a class="nav-link <?= ($page ?? '') === 'categories' ? 'active' : '' ?>" href="<?= url('/categories') ?>">
                         <i class="fas fa-tags me-2"></i>
                         Categorias
                     </a>
-                    <a class="nav-link <?= ($page ?? '') === 'cost-centers' ? 'active' : '' ?>" href="<?= url('/cost-centers') ?>">
-                        <i class="fas fa-building me-2"></i>
-                        Centros de Custo
+                    <?php if (isset($_SESSION['user_tipo']) && $_SESSION['user_tipo'] === 'admin'): ?>
+                    <a class="nav-link <?= ($page ?? '') === 'organizations' ? 'active' : '' ?>" href="<?= url('/organizations') ?>">
+                        <i class="fas fa-users me-2"></i>
+                        Equipe
                     </a>
-                    <a class="nav-link <?= ($page ?? '') === 'contacts' ? 'active' : '' ?>" href="<?= url('/contacts') ?>">
-                        <i class="fas fa-address-book me-2"></i>
-                        Contatos
-                    </a>
+                    <?php endif; ?>
                     <a class="nav-link <?= ($page ?? '') === 'reports' ? 'active' : '' ?>" href="<?= url('/reports') ?>">
                         <i class="fas fa-chart-bar me-2"></i>
                         Relatórios
+                    </a>
+                    <a class="nav-link <?= ($page ?? '') === 'profile' ? 'active' : '' ?>" href="<?= url('/profile') ?>">
+                        <i class="fas fa-user-cog me-2"></i>
+                        Configurações
+                    </a>
+                    
+                    <!-- Mobile PWA Option - Only show on mobile devices -->
+                    <a class="nav-link d-block d-md-none <?= ($page ?? '') === 'mobile' ? 'active' : '' ?>" href="<?= url('/mobile') ?>" style="border-top: 1px solid var(--border-color); margin-top: 10px; padding-top: 15px;">
+                        <i class="fas fa-mobile-alt me-2"></i>
+                        Versão Mobile (PWA)
+                        <small class="d-block text-muted mt-1">
+                            <i class="fas fa-plus-circle me-1"></i>
+                            Instalar como app
+                        </small>
                     </a>
                 </nav>
             </div>
             
             <!-- Main Content -->
             <div class="col-md-10 col-lg-10 main-content p-4">
+
                 <?php 
                 $contentPage = $page ?? 'dashboard';
                 $contentPath = __DIR__ . "/{$contentPage}.php";
@@ -519,6 +655,10 @@
     <!-- Select2 -->
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     
+    <!-- Sistema de Notificações -->
+    <script src="<?= url('assets/js/notifications.js') ?>"></script>
+    <script src="<?= url('assets/js/notification-examples.js') ?>"></script>
+    
     <script>
         // Configuração global para SweetAlert2
         const Toast = Swal.mixin({
@@ -534,74 +674,8 @@
         });
     </script>
     
-    <!-- PWA Service Worker -->
     <script>
-        // Registrar Service Worker
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', function() {
-                navigator.serviceWorker.register('/sw.js')
-                    .then(function(registration) {
-                        console.log('[PWA] Service Worker registrado com sucesso:', registration.scope);
-                        
-                        // Verificar por atualizações
-                        registration.addEventListener('updatefound', function() {
-                            const newWorker = registration.installing;
-                            newWorker.addEventListener('statechange', function() {
-                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                                    // Nova versão disponível
-                                    showUpdateAvailable();
-                                }
-                            });
-                        });
-                    })
-                    .catch(function(error) {
-                        console.log('[PWA] Falha ao registrar Service Worker:', error);
-                    });
-            });
-        }
-        
-        // Mostrar notificação de atualização disponível
-        function showUpdateAvailable() {
-            const toast = Swal.mixin({
-                toast: true,
-                position: 'top-end',
-                showConfirmButton: true,
-                confirmButtonText: 'Atualizar',
-                showCancelButton: true,
-                cancelButtonText: 'Depois',
-                timer: 10000,
-                timerProgressBar: true
-            });
-            
-            toast.fire({
-                icon: 'info',
-                title: 'Atualização Disponível',
-                text: 'Uma nova versão do app está disponível!'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    window.location.reload();
-                }
-            });
-        }
-        
-        // Detectar quando o app está sendo executado em modo standalone (PWA instalado)
-        function isPWA() {
-            return window.matchMedia('(display-mode: standalone)').matches || 
-                   window.navigator.standalone === true;
-        }
-        
-        // Mostrar banner de instalação PWA
-        let deferredPrompt;
-        
-        window.addEventListener('beforeinstallprompt', function(e) {
-            // Prevenir o prompt automático
-            e.preventDefault();
-            deferredPrompt = e;
-            
-            // Mostrar botão de instalação customizado
-            showInstallBanner();
-        });
-        
+        // Scripts básicos do sistema
         function showInstallBanner() {
             // Verificar se já foi instalado ou se o banner já foi mostrado
             if (isPWA() || localStorage.getItem('pwa-install-dismissed')) {
@@ -689,6 +763,48 @@
                 timer: 3000
             });
         });
+        
+        // Máscara para valores monetários
+        function currencyMask(input) {
+            let value = input.value.replace(/\D/g, '');
+            value = (value / 100).toFixed(2);
+            value = value.replace('.', ',');
+            value = value.replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.');
+            input.value = 'R$ ' + value;
+        }
+        
+        function removeCurrencyMask(value) {
+            return value.replace(/[R$\s.]/g, '').replace(',', '.');
+        }
+        
+        // Aplicar máscara em todos os campos com classe currency-mask
+        document.addEventListener('DOMContentLoaded', function() {
+            const currencyFields = document.querySelectorAll('.currency-mask');
+            
+            currencyFields.forEach(function(field) {
+                // Aplicar máscara quando o usuário digita
+                field.addEventListener('input', function() {
+                    currencyMask(this);
+                });
+                
+                // Aplicar máscara quando o campo ganha foco (caso já tenha valor)
+                field.addEventListener('focus', function() {
+                    if (this.value && !this.value.includes('R$')) {
+                        let numValue = parseFloat(this.value) || 0;
+                        this.value = numValue.toFixed(2);
+                        currencyMask(this);
+                    }
+                });
+                
+                // Aplicar máscara inicial se o campo já tiver valor
+                if (field.value && !field.value.includes('R$')) {
+                    let numValue = parseFloat(field.value) || 0;
+                    field.value = numValue.toFixed(2);
+                    currencyMask(field);
+                }
+            });
+        });
+
     </script>
 </body>
 </html>

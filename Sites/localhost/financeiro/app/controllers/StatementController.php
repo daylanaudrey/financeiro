@@ -15,7 +15,7 @@ class StatementController extends BaseController {
     public function index() {
         try {
             $user = AuthMiddleware::requireAuth();
-            $orgId = 1;
+            $orgId = $this->getCurrentOrgId();
             
             $accountId = (int)($_GET['account_id'] ?? 0);
             
@@ -58,9 +58,9 @@ class StatementController extends BaseController {
             $totalRecords = $this->transactionModel->countAccountTransactions($accountId, $startDate, $endDate);
             $totalPages = ceil($totalRecords / $perPage);
             
-            $data = [
-                'title' => 'Extrato da Conta - Sistema Financeiro',
-                'page' => 'statements',
+            // Renderizar a view statements dentro de um buffer
+            ob_start();
+            $pageData = [
                 'user' => $user,
                 'account' => $account,
                 'transactions' => $transactions,
@@ -70,7 +70,17 @@ class StatementController extends BaseController {
                 'endDate' => $endDate,
                 'currentPage' => $page,
                 'totalPages' => $totalPages,
-                'totalRecords' => $totalRecords,
+                'totalRecords' => $totalRecords
+            ];
+            extract($pageData);
+            include __DIR__ . '/../views/statements.php';
+            $content = ob_get_clean();
+            
+            $data = [
+                'title' => 'Extrato da Conta - Sistema Financeiro',
+                'page' => 'statements',
+                'user' => $user,
+                'content' => $content,
                 'pageTitle' => 'Extrato - ' . $account['nome']
             ];
             
@@ -84,7 +94,7 @@ class StatementController extends BaseController {
     public function export() {
         try {
             $user = AuthMiddleware::requireAuth();
-            $orgId = 1;
+            $orgId = $this->getCurrentOrgId();
             
             $accountId = (int)($_GET['account_id'] ?? 0);
             $format = $_GET['format'] ?? 'pdf';
@@ -152,7 +162,6 @@ class StatementController extends BaseController {
             'Data',
             'Descrição', 
             'Categoria',
-            'Centro de Custo',
             'Tipo',
             'Status',
             'Valor',
@@ -173,7 +182,6 @@ class StatementController extends BaseController {
                 date('d/m/Y', strtotime($transaction['data_competencia'])),
                 $transaction['descricao'],
                 $transaction['category_name'] ?: 'Sem categoria',
-                $transaction['cost_center_name'] ?: '',
                 $this->getTransactionTypeLabel($transaction['kind']),
                 ucfirst($transaction['status']),
                 ($isCredit ? '' : '-') . 'R$ ' . number_format($valor, 2, ',', '.'),

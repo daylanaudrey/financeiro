@@ -13,20 +13,17 @@ class ReportController extends BaseController {
         $this->transactionModel = new Transaction();
         $this->accountModel = new Account();
         $this->categoryModel = new Category();
-        $this->costCenterModel = new CostCenter();
     }
     
     public function index() {
         try {
             $user = AuthMiddleware::requireAuth();
             
-            // Por enquanto, usar org_id = 1
-            $orgId = 1;
+            $orgId = $this->getCurrentOrgId();
             
             // Dados básicos para a página de relatórios
             $accounts = $this->accountModel->getActiveAccountsByOrg($orgId);
             $categories = $this->categoryModel->getCategoriesByOrg($orgId);
-            $costCenters = $this->costCenterModel->getActiveCostCenters($orgId);
             
             // Dados para dashboard de relatórios
             $currentMonth = date('Y-m');
@@ -50,7 +47,6 @@ class ReportController extends BaseController {
                 'user' => $user,
                 'accounts' => $accounts,
                 'categories' => $categories,
-                'costCenters' => $costCenters,
                 'monthlyBalance' => $monthlyBalance,
                 'recentTransactions' => $recentTransactions,
                 'categoryExpenses' => $categoryExpenses,
@@ -69,7 +65,7 @@ class ReportController extends BaseController {
     public function getBalanceReport() {
         try {
             $user = AuthMiddleware::requireAuth();
-            $orgId = 1;
+            $orgId = $this->getCurrentOrgId();
             
             $startDate = $_GET['start_date'] ?? date('Y-m-01');
             $endDate = $_GET['end_date'] ?? date('Y-m-t');
@@ -97,7 +93,7 @@ class ReportController extends BaseController {
     public function getCategoryReport() {
         try {
             $user = AuthMiddleware::requireAuth();
-            $orgId = 1;
+            $orgId = $this->getCurrentOrgId();
             
             $startDate = $_GET['start_date'] ?? date('Y-m-01');
             $endDate = $_GET['end_date'] ?? date('Y-m-t');
@@ -121,7 +117,7 @@ class ReportController extends BaseController {
     public function getCategoriesData() {
         try {
             $user = AuthMiddleware::requireAuth();
-            $orgId = 1;
+            $orgId = $this->getCurrentOrgId();
             
             $startDate = $_GET['start_date'] ?? date('Y-m-01');
             $endDate = $_GET['end_date'] ?? date('Y-m-t');
@@ -167,7 +163,7 @@ class ReportController extends BaseController {
             ORDER BY mes
         ";
         
-        $stmt = $this->transactionModel->db->prepare($sql);
+        $stmt = $this->db->prepare($sql);
         $stmt->execute([$orgId, $startDate, $endDate]);
         return $stmt->fetchAll();
     }
@@ -190,7 +186,7 @@ class ReportController extends BaseController {
             ORDER BY total DESC
         ";
         
-        $stmt = $this->transactionModel->db->prepare($sql);
+        $stmt = $this->db->prepare($sql);
         $stmt->execute([$orgId, $startDate, $endDate]);
         return $stmt->fetchAll();
     }
@@ -237,7 +233,7 @@ class ReportController extends BaseController {
             ORDER BY total DESC
         ";
         
-        $stmt = $this->transactionModel->db->prepare($sql);
+        $stmt = $this->db->prepare($sql);
         $stmt->execute([$orgId, $startDate, $endDate]);
         return $stmt->fetchAll();
     }

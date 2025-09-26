@@ -17,16 +17,12 @@ class VaultController extends BaseController {
     
     public function index() {
         try {
-            // Por enquanto, usar org_id = 1
-            $orgId = 1;
+            $orgId = $this->getCurrentOrgId();
             
             // Buscar vaults
             $vaults = $this->vaultModel->getVaultsWithGoals($orgId);
             
-            // Buscar contas do tipo vault
-            $vaultAccounts = $this->accountModel->getAccountsByType($orgId, 'vault');
-            
-            // Buscar todas as contas para o select de origem
+            // Buscar todas as contas para o select de origem (não precisamos mais de contas vault específicas)
             $accounts = $this->accountModel->getActiveAccountsByOrg($orgId);
             
             // Estatísticas
@@ -37,7 +33,6 @@ class VaultController extends BaseController {
                 'title' => 'Vaults e Objetivos - Sistema Financeiro',
                 'page' => 'vaults',
                 'vaults' => $vaults,
-                'vaultAccounts' => $vaultAccounts,
                 'accounts' => $accounts,
                 'statistics' => $statistics,
                 'categoryStats' => $categoryStats,
@@ -58,7 +53,7 @@ class VaultController extends BaseController {
             }
             
             $data = $_POST;
-            $data['org_id'] = 1; // Por enquanto fixo
+            $data['org_id'] = $this->getCurrentOrgId();
             $data['created_by'] = $_SESSION['user_id'] ?? null;
             
             $vaultId = $this->vaultModel->createVaultGoal($data);
@@ -195,8 +190,7 @@ class VaultController extends BaseController {
     
     public function getStatistics() {
         try {
-            // Por enquanto, usar org_id = 1
-            $orgId = 1;
+            $orgId = $this->getCurrentOrgId();
             
             $statistics = $this->vaultModel->getVaultStatistics($orgId);
             $categoryStats = $this->vaultModel->getVaultsByCategory($orgId);
@@ -215,30 +209,10 @@ class VaultController extends BaseController {
         }
     }
     
-    public function getVaultAccounts() {
-        try {
-            // Por enquanto, usar org_id = 1
-            $orgId = 1;
-            
-            $vaultAccounts = $this->accountModel->getAccountsByType($orgId, 'vault');
-            
-            $this->jsonResponse([
-                'success' => true,
-                'accounts' => $vaultAccounts
-            ]);
-            
-        } catch (Exception $e) {
-            $this->jsonResponse([
-                'success' => false,
-                'message' => $e->getMessage()
-            ]);
-        }
-    }
     
     public function getVaultsWithGoals() {
         try {
-            // Por enquanto, usar org_id = 1
-            $orgId = 1;
+            $orgId = $this->getCurrentOrgId();
             
             // Filtrar apenas objetivos ativos se solicitado
             $activeOnly = isset($_GET['active_only']) && $_GET['active_only'] == '1';
@@ -310,7 +284,7 @@ class VaultController extends BaseController {
             
             // 2. Criar transação de débito na conta origem
             $transactionData = [
-                'org_id' => 1,
+                'org_id' => $this->getCurrentOrgId(),
                 'account_id' => $accountFromId,
                 'kind' => 'saida',
                 'valor' => $valor,
@@ -395,16 +369,122 @@ class VaultController extends BaseController {
         
         // Se não existe, usar a primeira categoria disponível ou retornar null
         if (!empty($categories)) {
-            // Procurar por uma categoria de saída/despesa
+            // Procurar por uma categoria de despesa
             foreach ($categories as $category) {
-                if ($category['tipo'] === 'out' || $category['tipo'] === 'saida') {
+                if ($category['tipo'] === 'despesa') {
                     return $category['id'];
                 }
             }
-            // Se não encontrou categoria de saída, usar a primeira disponível
+            // Se não encontrou categoria de despesa, usar a primeira disponível
             return $categories[0]['id'];
         }
         
         return null; // Se não há categorias, não usar categoria
+    }
+    
+    public function withdraw() {
+        try {
+            if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+                throw new Exception('Método não permitido');
+            }
+            
+            // Dados do resgate
+            $accountToId = (int)($_POST['account_to'] ?? 0);
+            $vaultGoalId = (int)($_POST['vault_goal_id'] ?? 0);
+            $valor = $this->convertBrazilianCurrencyToDecimal($_POST['valor'] ?? '0');
+            $dataCompetencia = $_POST['data_competencia'] ?? date('Y-m-d');
+            $descricao = trim($_POST['descricao'] ?? 'Resgate de objetivo Vault');
+            $observacoes = trim($_POST['observacoes'] ?? '') ?: null;
+            
+            // Validações
+            if (!$accountToId || !$vaultGoalId) {
+                throw new Exception('Conta de destino e objetivo Vault são obrigatórios');
+            }
+            
+            if ($valor <= 0) {
+                throw new Exception('Valor deve ser maior que zero');
+            }
+            
+            // Verificar se a conta de destino existe
+            $accountTo = $this->accountModel->findById($accountToId);
+            if (!$accountTo) {
+                throw new Exception('Conta de destino não encontrada');
+            }
+            
+            // Verificar se o vault goal existe e tem saldo suficiente
+            $vaultGoal = $this->vaultModel->getVaultById($vaultGoalId);
+            if (!$vaultGoal) {
+                throw new Exception('Objetivo Vault não encontrado');
+            }
+            
+            // Verificar saldo suficiente no vault
+            if ($vaultGoal['valor_atual'] < $valor) {
+                throw new Exception('Saldo insuficiente no Vault. Disponível: R$ ' . number_format($vaultGoal['valor_atual'], 2, ',', '.'));
+            }
+            
+            // 1. Obter ID da categoria "Vaults"
+            $vaultsCategoryId = $this->getVaultsCategoryId();
+            
+            // 2. Criar transação de crédito na conta destino
+            $transactionData = [
+                'org_id' => $this->getCurrentOrgId(),
+                'account_id' => $accountToId,
+                'kind' => 'entrada',
+                'valor' => $valor,
+                'data_competencia' => $dataCompetencia,
+                'data_pagamento' => $dataCompetencia,
+                'status' => 'confirmado',
+                'category_id' => $vaultsCategoryId,
+                'contact_id' => null,
+                'descricao' => $descricao,
+                'observacoes' => $observacoes,
+                'created_by' => $_SESSION['user_id'] ?? 1
+            ];
+            
+            $transactionId = $this->transactionModel->createTransaction($transactionData);
+            
+            if (!$transactionId) {
+                throw new Exception('Erro ao criar transação de crédito');
+            }
+            
+            // 3. Registrar movimento de retirada no vault
+            $movementId = $this->vaultModel->addMovement(
+                $vaultGoalId, 
+                $transactionId, 
+                'retirada', 
+                $valor, 
+                $descricao
+            );
+            
+            // 4. Atualizar valor atual do vault goal
+            $novoValorAtual = $vaultGoal['valor_atual'] - $valor;
+            $this->vaultModel->update($vaultGoalId, [
+                'valor_atual' => $novoValorAtual
+            ]);
+            
+            // 5. Se estava concluído e agora não está mais, atualizar status
+            if ($vaultGoal['concluido'] && $novoValorAtual < $vaultGoal['valor_meta']) {
+                $this->vaultModel->update($vaultGoalId, [
+                    'concluido' => 0,
+                    'data_conclusao' => null
+                ]);
+            }
+            
+            $message = 'Resgate realizado com sucesso!';
+            
+            $this->jsonResponse([
+                'success' => true,
+                'message' => $message,
+                'transaction_id' => $transactionId,
+                'movement_id' => $movementId,
+                'novo_saldo' => $novoValorAtual
+            ]);
+            
+        } catch (Exception $e) {
+            $this->jsonResponse([
+                'success' => false,
+                'message' => $e->getMessage()
+            ]);
+        }
     }
 }

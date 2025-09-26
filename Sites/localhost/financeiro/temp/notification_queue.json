@@ -1,0 +1,96 @@
+[
+    {
+        "id": "job_68cc639d4356f5.38837960",
+        "type": "notification",
+        "org_id": 1,
+        "data": {
+            "notification_type": "test",
+            "title": "Teste Background Job",
+            "message": "Esta \u00e9 uma mensagem de teste para verificar se o sistema de background jobs funciona",
+            "related_entity_type": "test",
+            "related_entity_id": 999
+        },
+        "options": {
+            "async_whatsapp": true,
+            "skip_email": true
+        },
+        "created_at": "2025-09-18 19:55:09",
+        "status": "completed",
+        "attempts": 0,
+        "max_attempts": 3,
+        "completed_at": "2025-09-18 19:55:16",
+        "result": {
+            "success": true,
+            "result": {
+                "whatsapp_sent": 2,
+                "whatsapp_failed": 0,
+                "app_sent": 6,
+                "email_sent": 7,
+                "email_failed": 0,
+                "total_members": 7
+            }
+        }
+    },
+    {
+        "id": "job_68cc639e667259.43094915",
+        "type": "notification",
+        "org_id": 1,
+        "data": {
+            "notification_type": "batch_test",
+            "title": "Teste Batch #1",
+            "message": "Mensagem de teste em lote n\u00famero 1",
+            "related_entity_type": "batch_test",
+            "related_entity_id": 1
+        },
+        "options": {
+            "async_whatsapp": true
+        },
+        "created_at": "2025-09-18 19:55:10",
+        "status": "completed",
+        "attempts": 0,
+        "max_attempts": 3,
+        "completed_at": "2025-09-18 19:55:21",
+        "result": {
+            "success": true,
+            "result": {
+                "whatsapp_sent": 2,
+                "whatsapp_failed": 0,
+                "app_sent": 6,
+                "email_sent": 7,
+                "email_failed": 0,
+                "total_members": 7
+            }
+        }
+    },
+    {
+        "id": "job_68cc639f70e3f2.49135413",
+        "type": "notification",
+        "org_id": 1,
+        "data": {
+            "notification_type": "batch_test",
+            "title": "Teste Batch #2",
+            "message": "Mensagem de teste em lote n\u00famero 2",
+            "related_entity_type": "batch_test",
+            "related_entity_id": 2
+        },
+        "options": {
+            "async_whatsapp": true
+        },
+        "created_at": "2025-09-18 19:55:11",
+        "status": "completed",
+        "attempts": 0,
+        "max_attempts": 3,
+        "completed_at": "2025-09-18 19:55:26",
+        "result": {
+            "success": true,
+            "result": {
+                "whatsapp_sent": 2,
+                "whatsapp_failed": 0,
+                "app_sent": 6,
+                "email_sent": 7,
+                "email_failed": 0,
+                "total_members": 7
+            }
+        }
+    }
+]

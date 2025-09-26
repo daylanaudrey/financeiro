@@ -171,6 +171,12 @@
                             <i class="fas fa-plus me-1"></i>
                             Depositar
                         </button>
+                        <?php if ($vault['valor_atual'] > 0): ?>
+                        <button class="btn btn-sm btn-warning me-2" onclick="addWithdraw(<?= $vault['id'] ?>)">
+                            <i class="fas fa-minus me-1"></i>
+                            Resgatar
+                        </button>
+                        <?php endif; ?>
                         <button class="btn btn-sm btn-outline-secondary" onclick="showVaultDetails(<?= $vault['id'] ?>)">
                             <i class="fas fa-chart-line me-1"></i>
                             Histórico
@@ -195,23 +201,10 @@
                     <input type="hidden" id="vaultId" name="id">
                     
                     <div class="row">
-                        <div class="col-md-8">
+                        <div class="col-12">
                             <div class="mb-3">
                                 <label for="vaultTitulo" class="form-label">Título do Objetivo *</label>
                                 <input type="text" class="form-control" id="vaultTitulo" name="titulo" required>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="mb-3">
-                                <label for="vaultAccount" class="form-label">Conta Vault *</label>
-                                <select class="form-select" id="vaultAccount" name="account_id" required>
-                                    <option value="">Selecione a conta vault...</option>
-                                    <?php foreach ($vaultAccounts as $account): ?>
-                                        <option value="<?= $account['id'] ?>">
-                                            <?= htmlspecialchars($account['nome']) ?>
-                                        </option>
-                                    <?php endforeach; ?>
-                                </select>
                             </div>
                         </div>
                     </div>
@@ -377,6 +370,71 @@
     </div>
 </div>
 
+<!-- Modal para Resgate de Vault -->
+<div class="modal fade" id="vaultWithdrawModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Resgate de Objetivo</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="vaultWithdrawForm">
+                    <div class="mb-3">
+                        <label for="withdrawVaultGoal" class="form-label">Objetivo</label>
+                        <input type="text" class="form-control" id="withdrawVaultGoal" readonly>
+                        <input type="hidden" id="withdrawVaultGoalId" name="vault_goal_id">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="withdrawAccountTo" class="form-label">Conta de Destino *</label>
+                        <select class="form-select" id="withdrawAccountTo" name="account_to" required>
+                            <option value="">Selecione a conta de destino...</option>
+                            <?php foreach ($accounts as $account): ?>
+                                <option value="<?= $account['id'] ?>">
+                                    <?= htmlspecialchars($account['nome']) ?>
+                                    (R$ <?= number_format($account['saldo_atual'], 2, ',', '.') ?>)
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="withdrawValor" class="form-label">Valor do Resgate *</label>
+                        <input type="text" class="form-control currency-mask" id="withdrawValor" name="valor" placeholder="R$ 0,00" required>
+                        <div class="form-text">
+                            <span class="text-muted">Saldo disponível: </span>
+                            <span class="fw-bold text-success" id="withdrawSaldoDisponivel">R$ 0,00</span>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="withdrawData" class="form-label">Data do Resgate *</label>
+                        <input type="date" class="form-control" id="withdrawData" name="data_competencia" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="withdrawDescricao" class="form-label">Descrição</label>
+                        <input type="text" class="form-control" id="withdrawDescricao" name="descricao" placeholder="Resgate de objetivo" value="Resgate de objetivo">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="withdrawObservacoes" class="form-label">Observações</label>
+                        <textarea class="form-control" id="withdrawObservacoes" name="observacoes" rows="3" placeholder="Observações adicionais (opcional)"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-warning" onclick="saveVaultWithdraw()">
+                    <i class="fas fa-minus me-2"></i>
+                    Realizar Resgate
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 // Inicializar página
 document.addEventListener('DOMContentLoaded', function() {
@@ -433,7 +491,6 @@ function editVault(id) {
             document.getElementById('vaultCategoria').value = vault.categoria;
             document.getElementById('vaultCor').value = vault.cor;
             document.getElementById('vaultIcone').value = vault.icone;
-            document.getElementById('vaultAccount').value = vault.account_id;
             
             // Alterar título do modal
             document.querySelector('#vaultModal .modal-title').textContent = 'Editar Objetivo';
@@ -651,6 +708,81 @@ function saveVaultDeposit() {
             Swal.fire('Sucesso!', data.message, 'success');
             document.getElementById('vaultDepositForm').reset();
             bootstrap.Modal.getInstance(document.getElementById('vaultDepositModal')).hide();
+            // Recarregar página para atualizar os valores
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            Swal.fire('Erro!', data.message, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        Swal.fire('Erro!', 'Erro de comunicação com o servidor', 'error');
+    });
+}
+
+// Funções para Resgate
+function addWithdraw(vaultId) {
+    // Abrir modal de resgate preenchendo o vault goal
+    openWithdrawModal(vaultId);
+}
+
+function openWithdrawModal(vaultId) {
+    // Buscar informações do vault
+    fetch(`<?= url('/api/vaults/get') ?>?id=${vaultId}`)
+    .then(response => response.json())
+    .then(data => {
+        if (data.success && data.vault) {
+            // Preencher informações do objetivo
+            document.getElementById('withdrawVaultGoal').value = data.vault.titulo;
+            document.getElementById('withdrawVaultGoalId').value = vaultId;
+            document.getElementById('withdrawData').value = new Date().toISOString().split('T')[0];
+            document.getElementById('withdrawDescricao').value = `Resgate de ${data.vault.titulo}`;
+            document.getElementById('withdrawSaldoDisponivel').textContent = 
+                'R$ ' + parseFloat(data.vault.valor_atual).toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            
+            // Resetar outros campos
+            document.getElementById('withdrawAccountTo').value = '';
+            document.getElementById('withdrawValor').value = '';
+            document.getElementById('withdrawObservacoes').value = '';
+            
+            // Abrir modal
+            new bootstrap.Modal(document.getElementById('vaultWithdrawModal')).show();
+        } else {
+            Swal.fire('Erro!', 'Não foi possível carregar informações do objetivo', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        Swal.fire('Erro!', 'Erro ao carregar objetivo', 'error');
+    });
+}
+
+function saveVaultWithdraw() {
+    const form = document.getElementById('vaultWithdrawForm');
+    const formData = new FormData(form);
+    
+    // Validações
+    if (!formData.get('account_to')) {
+        Swal.fire('Atenção!', 'Selecione a conta de destino', 'warning');
+        return;
+    }
+    
+    if (!formData.get('valor')) {
+        Swal.fire('Atenção!', 'Informe o valor do resgate', 'warning');
+        return;
+    }
+    
+    // Enviar dados para endpoint de resgate Vault
+    fetch('<?= url('/api/vaults/withdraw') ?>', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            Swal.fire('Sucesso!', data.message, 'success');
+            document.getElementById('vaultWithdrawForm').reset();
+            bootstrap.Modal.getInstance(document.getElementById('vaultWithdrawModal')).hide();
             // Recarregar página para atualizar os valores
             setTimeout(() => location.reload(), 1000);
         } else {

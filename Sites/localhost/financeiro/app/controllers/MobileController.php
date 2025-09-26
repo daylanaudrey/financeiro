@@ -1,6 +1,9 @@
 <?php
 require_once 'BaseController.php';
 require_once 'AuthMiddleware.php';
+require_once __DIR__ . '/../models/Transaction.php';
+require_once __DIR__ . '/../models/Account.php';
+require_once __DIR__ . '/../models/Category.php';
 
 class MobileController extends BaseController {
     private $transactionModel;
@@ -17,8 +20,7 @@ class MobileController extends BaseController {
     public function index() {
         $user = AuthMiddleware::requireAuth();
         
-        // Por enquanto, usar org_id = 1
-        $orgId = 1;
+        $orgId = $this->getCurrentOrgId();
         
         // Buscar dados necessários para mobile
         $accounts = $this->accountModel->getActiveAccountsByOrg($orgId);

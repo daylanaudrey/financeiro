@@ -1,6 +1,7 @@
 <?php
 error_reporting(E_ALL);
-ini_set('display_errors', 1);
+ini_set('display_errors', 0); // Não mostrar erros na página
+ini_set('log_errors', 1); // Manter log de erros
 
 // Definir constantes do projeto
 define('BASE_PATH', __DIR__);
@@ -8,7 +9,11 @@ define('APP_PATH', BASE_PATH . '/app');
 define('CONFIG_PATH', BASE_PATH . '/config');
 
 // Incluir funções auxiliares
-require_once CONFIG_PATH . '/functions.php';
+require_once APP_PATH . '/helpers/functions.php';
+
+// Inicializar logger de erros
+require_once APP_PATH . '/services/ErrorLoggerService.php';
+ErrorLoggerService::init();
 
 // Função de autoload simples
 function autoload($className) {
@@ -58,13 +63,17 @@ $routes = [
         '/login' => ['AuthController', 'showLogin'],
         '/register' => ['AuthController', 'showRegister'],
         '/logout' => ['AuthController', 'logout'],
+        '/verify-email' => ['AuthController', 'verifyEmail'],
+        '/resend-verification' => ['AuthController', 'resendVerificationEmail'],
         '/accounts' => ['AccountController', 'index'],
         '/transactions' => ['TransactionController', 'index'],
         '/categories' => ['CategoryController', 'index'],
         '/contacts' => ['ContactController', 'index'],
         '/transfers' => ['TransactionController', 'transfers'],
         '/vaults' => ['VaultController', 'index'],
-        '/cost-centers' => ['CostCenterController', 'index'],
+        '/organizations' => ['OrganizationController', 'index'],
+        '/profile' => ['ProfileController', 'index'],
+        '/credit-cards' => ['CreditCardController', 'index'],
         '/reports' => ['ReportController', 'index'],
         '/statements' => ['StatementController', 'index'],
         '/statements/export' => ['StatementController', 'export'],
@@ -72,16 +81,47 @@ $routes = [
         '/api/transactions/get' => ['TransactionController', 'getTransaction'],
         '/api/transactions/transfers' => ['TransactionController', 'getTransfers'],
         '/api/transactions/categories' => ['TransactionController', 'getCategoriesByType'],
+        '/api/transactions/scheduled' => ['TransactionController', 'getScheduled'],
+        '/api/transactions/filter' => ['TransactionController', 'filter'],
         '/api/categories/get' => ['CategoryController', 'getCategory'],
         '/api/contacts/get' => ['ContactController', 'getContact'],
         '/api/vaults/get' => ['VaultController', 'getVault'],
         '/api/vaults/statistics' => ['VaultController', 'getStatistics'],
         '/api/vaults/goals' => ['VaultController', 'getVaultsWithGoals'],
-        '/api/cost-centers/get' => ['CostCenterController', 'getCostCenter'],
-        '/api/cost-centers/active' => ['CostCenterController', 'getActiveCostCenters'],
-        '/api/cost-centers/parents' => ['CostCenterController', 'getParentOptions'],
-        '/api/cost-centers/report' => ['CostCenterController', 'getReport'],
+        '/api/credit-cards/get' => ['CreditCardController', 'getCard'],
+        '/api/credit-cards/active' => ['CreditCardController', 'getActiveCards'],
+        '/api/credit-cards/statistics' => ['CreditCardController', 'getStatistics'],
         '/api/reports/categories' => ['ReportController', 'getCategoriesData'],
+        '/api/dashboard/get-layout' => ['DashboardApiController', 'getLayout'],
+        // Webhook routes for N8N integration
+        '/webhook/test' => ['WebhookController', 'test'],
+        '/integrations' => ['IntegrationController', 'index'],
+        '/api/integrations/config' => ['IntegrationController', 'getConfig'],
+        '/api/integrations/whatsapp-config-edit' => ['IntegrationController', 'getWhatsAppConfigForEdit'],
+        '/api/integrations/email-config-edit' => ['IntegrationController', 'getEmailConfigForEdit'],
+        '/api/notifications/recent' => ['NotificationController', 'recent'],
+        '/api/notifications/pending' => ['NotificationController', 'pending'],
+        '/api/notifications/preferences' => ['NotificationController', 'getPreferences'],
+        '/api/notifications/audit-log' => ['NotificationController', 'auditLog'],
+        // Rotas GET de baixas parciais
+        '/api/partial-payments/transaction/{id}' => ['PartialPaymentController', 'listByTransaction'],
+        '/api/partial-payments/list' => ['PartialPaymentController', 'listAll'],
+        '/partial-payments' => 'partial-payments',
+        '/admin' => ['AdminController', 'index'],
+        '/admin/organizations' => ['AdminController', 'organizations'],
+        '/admin/organizations-users' => ['AdminController', 'organizationsUsers'],
+        '/admin/subscriptions' => ['AdminController', 'subscriptions'],
+        '/admin/system-config' => ['AdminController', 'systemConfig'],
+        '/admin/audit-logs' => ['AdminController', 'auditLogs'],
+        // Cron jobs endpoints
+        '/cron/due-date-reminders' => ['CronController', 'processDueDateReminders'],
+        '/cron/test' => ['CronController', 'testCron'],
+        '/cron/status' => ['CronController', 'statusLembretes'],
+        // Debug endpoints (temporário)
+        '/debug/user-role' => ['OrganizationController', 'debugUserRole'],
+        '/debug/due-today' => ['HomeController', 'debugDueToday'],
+        // Background job processor
+        '/process-notifications' => ['NotificationController', 'processBackground'],
     ],
     'POST' => [
         '/auth/login' => ['AuthController', 'login'],
@@ -95,7 +135,15 @@ $routes = [
         '/api/transactions/delete' => ['TransactionController', 'delete'],
         '/api/transactions/launch' => ['TransactionController', 'launch'],
         '/api/transactions/confirm' => ['TransactionController', 'confirm'],
+        '/api/transactions/partial-payment' => ['TransactionController', 'partialPayment'],
         '/api/transactions/transfer' => ['TransactionController', 'transfer'],
+        // Rotas de baixas parciais
+        '/api/partial-payments/register' => ['PartialPaymentController', 'register'],
+        '/api/partial-payments/cancel' => ['PartialPaymentController', 'cancel'],
+        '/api/partial-payments/pending' => ['PartialPaymentController', 'getPendingTransactions'],
+        '/api/partial-payments/dashboard' => ['PartialPaymentController', 'dashboard'],
+        '/api/partial-payments/toggle' => ['PartialPaymentController', 'togglePartialPayment'],
+        '/api/mobile/search' => ['MobileController', 'searchTransactions'],
         '/api/categories/create' => ['CategoryController', 'create'],
         '/api/categories/update' => ['CategoryController', 'update'],
         '/api/categories/delete' => ['CategoryController', 'delete'],
@@ -107,9 +155,31 @@ $routes = [
         '/api/vaults/delete' => ['VaultController', 'delete'],
         '/api/vaults/movement' => ['VaultController', 'addMovement'],
         '/api/vaults/deposit' => ['VaultController', 'deposit'],
-        '/api/cost-centers/create' => ['CostCenterController', 'create'],
-        '/api/cost-centers/update' => ['CostCenterController', 'update'],
-        '/api/cost-centers/delete' => ['CostCenterController', 'delete'],
+        '/api/vaults/withdraw' => ['VaultController', 'withdraw'],
+        '/api/credit-cards/create' => ['CreditCardController', 'create'],
+        '/api/credit-cards/update' => ['CreditCardController', 'update'],
+        '/api/credit-cards/delete' => ['CreditCardController', 'delete'],
+        '/api/credit-cards/pay' => ['CreditCardController', 'payCard'],
+        '/api/organizations/create' => ['OrganizationController', 'create'],
+        '/api/organizations/switch' => ['OrganizationController', 'switchOrg'],
+        '/api/organizations/update-member' => ['OrganizationController', 'updateMember'],
+        '/api/profile/update' => ['ProfileController', 'update'],
+        '/api/organizations/invite' => ['OrganizationController', 'inviteUser'],
+        '/api/dashboard/save-layout' => ['DashboardApiController', 'saveLayout'],
+        '/api/dashboard/reset-layout' => ['DashboardApiController', 'resetLayout'],
+        // Webhook POST routes for N8N integration
+        '/webhook/n8n/transaction' => ['WebhookController', 'n8nTransaction'],
+        '/api/integrations/test-whatsapp' => ['IntegrationController', 'testWhatsApp'],
+        '/api/integrations/send-test-whatsapp' => ['IntegrationController', 'sendTestWhatsApp'],
+        '/api/integrations/test-n8n' => ['IntegrationController', 'testN8NWebhook'],
+        '/api/integrations/save-config' => ['IntegrationController', 'saveConfig'],
+        '/api/integrations/save-whatsapp-config' => ['IntegrationController', 'saveWhatsAppConfig'],
+        '/api/integrations/save-email-config' => ['IntegrationController', 'saveEmailConfig'],
+        '/api/notifications/preferences' => ['NotificationController', 'savePreferences'],
+        '/admin/update-subscription' => ['AdminController', 'updateSubscription'],
+        '/admin/update-system-config' => ['AdminController', 'updateSystemConfig'],
+        '/admin/test-email-config' => ['AdminController', 'testEmailConfig'],
+        '/admin/send-test-email' => ['AdminController', 'sendTestEmail'],
     ]
 ];
 
@@ -130,6 +200,7 @@ try {
             throw new Exception("Controller {$controllerName} não encontrado");
         }
     } else {
+        // Dynamic notification routes removed - future: WhatsApp integration
         // Página não encontrada
         http_response_code(404);
         echo "<h1>404 - Página não encontrada</h1>";

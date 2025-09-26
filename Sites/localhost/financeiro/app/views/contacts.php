@@ -109,10 +109,13 @@
                                 </td>
                                 <td class="text-end">
                                     <div class="btn-group btn-group-sm">
-                                        <button class="btn btn-outline-primary" onclick="editContact(<?= $contact['id'] ?>)">
+                                        <button class="btn btn-outline-info" onclick="viewContactHistory(<?= $contact['id'] ?>, '<?= htmlspecialchars($contact['nome']) ?>')" title="Ver Histórico">
+                                            <i class="fas fa-history"></i>
+                                        </button>
+                                        <button class="btn btn-outline-primary" onclick="editContact(<?= $contact['id'] ?>)" title="Editar">
                                             <i class="fas fa-edit"></i>
                                         </button>
-                                        <button class="btn btn-outline-danger" onclick="deleteContact(<?= $contact['id'] ?>, '<?= htmlspecialchars($contact['nome']) ?>')">
+                                        <button class="btn btn-outline-danger" onclick="deleteContact(<?= $contact['id'] ?>, '<?= htmlspecialchars($contact['nome']) ?>')" title="Excluir">
                                             <i class="fas fa-trash"></i>
                                         </button>
                                     </div>
@@ -364,4 +367,39 @@ document.addEventListener('DOMContentLoaded', function() {
         e.target.value = value;
     });
 });
+
+// Função para ver histórico de contato
+function viewContactHistory(contactId, contactName) {
+    // Redirecionar para página de transações com filtro por contato
+    const url = new URL('<?= url('/transactions') ?>', window.location.origin);
+    url.searchParams.set('contact_id', contactId);
+    url.searchParams.set('contact_name', contactName);
+    
+    window.location.href = url.toString();
+}
 </script>
+
+<!-- Modal para Histórico do Contato -->
+<div class="modal fade" id="contactHistoryModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="contactHistoryTitle">Histórico do Contato</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="contactHistoryContent">
+                    <div class="text-center p-4">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Carregando...</span>
+                        </div>
+                        <p class="mt-2">Carregando histórico...</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+            </div>
+        </div>
+    </div>
+</div>

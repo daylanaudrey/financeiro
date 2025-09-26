@@ -207,11 +207,27 @@
                         window.location.href = result.redirect;
                     });
                 } else {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Erro!',
-                        text: result.message
-                    });
+                    if (result.show_resend) {
+                        // Mostrar opção de reenvio de email
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Email não verificado',
+                            text: result.message,
+                            showCancelButton: true,
+                            confirmButtonText: 'Reenviar Email',
+                            cancelButtonText: 'Cancelar'
+                        }).then((resendResult) => {
+                            if (resendResult.isConfirmed) {
+                                resendVerificationEmail(document.getElementById('email').value);
+                            }
+                        });
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Erro!',
+                            text: result.message
+                        });
+                    }
                 }
             } catch (error) {
                 Swal.fire({
@@ -224,6 +240,40 @@
                 button.innerHTML = originalText;
             }
         });
+    
+    async function resendVerificationEmail(email) {
+        try {
+            const response = await fetch('<?= url('/resend-verification') ?>', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `email=${encodeURIComponent(email)}`
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Email enviado!',
+                    text: result.message
+                });
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Erro!',
+                    text: result.message
+                });
+            }
+        } catch (error) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Erro!',
+                text: 'Erro ao reenviar email. Tente novamente.'
+            });
+        }
+    }
     </script>
 </body>
 </html>

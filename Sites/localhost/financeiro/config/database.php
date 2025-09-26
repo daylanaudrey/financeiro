@@ -15,7 +15,7 @@ class Database {
     public function connect() {
         try {
             $this->connection = new PDO(
-                "mysql:host={$this->host};port={$this->port};dbname={$this->database};charset=utf8",
+                "mysql:host={$this->host};port={$this->port};dbname={$this->database};charset=utf8mb4",
                 $this->username,
                 $this->password,
                 [

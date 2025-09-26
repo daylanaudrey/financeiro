@@ -165,4 +165,14 @@ class Account extends BaseModel {
         
         return $this->create($data);
     }
+
+    /**
+     * Busca conta por nome e organização
+     */
+    public function findByName($name, $orgId) {
+        $sql = "SELECT * FROM {$this->table} WHERE nome = ? AND org_id = ? AND deleted_at IS NULL LIMIT 1";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([$name, $orgId]);
+        return $stmt->fetch();
+    }
 }

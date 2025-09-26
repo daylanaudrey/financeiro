@@ -2,18 +2,17 @@
 class AuthMiddleware {
     
     public static function requireAuth() {
-        error_log("=== AUTH MIDDLEWARE START ===");
-        error_log("Session status: " . session_status() . " (1=disabled, 2=active, 3=none)");
+        // Auth middleware started
         
         // Tentar iniciar sessão de forma segura
         if (session_status() === PHP_SESSION_NONE) {
-            error_log("Starting new session...");
+            // Starting new session
             
             // Configurar diretório de sessões se não estiver definido
             $sessionPath = session_save_path();
             if (empty($sessionPath)) {
                 $tempDir = sys_get_temp_dir();
-                error_log("Setting session save path to: " . $tempDir);
+                // Setting session save path
                 session_save_path($tempDir);
             }
             
@@ -26,9 +25,9 @@ class AuthMiddleware {
             
             try {
                 session_start();
-                error_log("Session started successfully. ID: " . session_id());
+                // Session started successfully
             } catch (Exception $e) {
-                error_log("Session start failed: " . $e->getMessage());
+                // Session start failed, will retry
                 // Se falhar, limpar cookies e tentar novamente com ID novo
                 if (isset($_COOKIE[session_name()])) {
                     setcookie(session_name(), '', time()-3600, '/');
@@ -36,44 +35,60 @@ class AuthMiddleware {
                 session_regenerate_id(true);
                 try {
                     session_start();
-                    error_log("Session regenerated and started. New ID: " . session_id());
+                    // Session regenerated and started
                 } catch (Exception $e2) {
-                    error_log("Second session start attempt failed: " . $e2->getMessage());
+                    // Second session start attempt failed
                     throw $e2;
                 }
             }
         } else {
-            error_log("Session already active. ID: " . session_id());
+            // Session already active
         }
         
-        error_log("Session data: " . json_encode($_SESSION ?? []));
-        
-        error_log("Checking if user is logged in...");
         $isLoggedIn = self::isLoggedIn();
-        error_log("Is logged in result: " . ($isLoggedIn ? 'YES' : 'NO'));
         
         if (!$isLoggedIn) {
-            error_log("User not logged in, redirecting to login page");
-            
+            // Verificar se é uma requisição AJAX/API
+            $isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) &&
+                     strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest';
+            $isApiCall = strpos($_SERVER['REQUEST_URI'], '/api/') !== false;
+
+            if ($isAjax || $isApiCall) {
+                // Para requisições AJAX/API, retornar JSON
+                header('Content-Type: application/json');
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Usuário não autenticado',
+                    'error' => 'authentication_required'
+                ]);
+                exit;
+            }
+
+            // User not logged in, redirecting to login page
+
             // Capturar a URL atual para redirecionamento pós-login
             $currentUrl = $_SERVER['REQUEST_URI'];
-            
+
             // Evitar loops infinitos - não salvar URLs de auth
-            if (!in_array($currentUrl, ['/login', '/register', '/logout']) && 
-                !str_contains($currentUrl, '/login') && 
-                !str_contains($currentUrl, '/logout')) {
-                $_SESSION['redirect_after_login'] = $currentUrl;
-                error_log("Saved redirect URL: " . $currentUrl);
+            if (!in_array($currentUrl, ['/login', '/register', '/logout']) &&
+                !str_contains($currentUrl, '/login') &&
+                !str_contains($currentUrl, '/logout') &&
+                !str_contains($currentUrl, '/auth/')) {
+
+                // Para mobile, salvar flag especial em vez da URL completa
+                if ($currentUrl === '/mobile') {
+                    $_SESSION['return_to_mobile'] = 'true';
+                } else {
+                    $_SESSION['redirect_after_login'] = $currentUrl;
+                }
+                // Saved redirect URL/flag
             }
-            
+
             header('Location: ' . url('/login'));
             exit;
         }
         
-        error_log("Getting current user...");
         $currentUser = self::getCurrentUser();
-        error_log("Current user data: " . json_encode($currentUser));
-        error_log("=== AUTH MIDDLEWARE END ===");
         
         return $currentUser;
     }

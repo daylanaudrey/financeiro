@@ -15,8 +15,7 @@ class CategoryController extends BaseController {
     public function index() {
         $user = AuthMiddleware::requireAuth();
         
-        // Por enquanto, usar org_id = 1
-        $orgId = 1;
+        $orgId = $this->getCurrentOrgId();
         
         $categories = $this->categoryModel->getCategoriesByOrg($orgId);
         $typeOptions = $this->categoryModel->getTypeOptions();
@@ -55,7 +54,7 @@ class CategoryController extends BaseController {
             }
             
             $categoryData = [
-                'org_id' => 1, // Por enquanto fixo
+                'org_id' => $this->getCurrentOrgId(),
                 'nome' => $nome,
                 'tipo' => $tipo,
                 'cor' => $cor,

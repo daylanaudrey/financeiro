@@ -319,7 +319,20 @@
     <div class="mobile-container">
         <!-- Header -->
         <div class="mobile-header">
-            <h1><i class="fas fa-wallet me-2"></i>Financeiro</h1>
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h1 class="mb-0"><i class="fas fa-wallet me-2"></i>Financeiro</h1>
+                <div class="header-actions">
+                    <button class="btn btn-light btn-sm me-2" onclick="refreshPage()" title="Atualizar">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                    <button class="btn btn-info btn-sm me-2" onclick="checkForUpdates()" title="Verificar Atualizações" id="updateBtn" style="display: none;">
+                        <i class="fas fa-download"></i>
+                    </button>
+                    <button class="btn btn-outline-light btn-sm" onclick="logout()" title="Sair">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </button>
+                </div>
+            </div>
             <div class="balance-info">
                 <div class="balance-item">
                     <div class="label">Saldo Total</div>
@@ -347,7 +360,46 @@
                 Nova Despesa
             </button>
         </div>
-        
+
+        <!-- Menu de Navegação -->
+        <div class="navigation-menu mb-4">
+            <div class="d-grid gap-2">
+                <button class="btn btn-outline-primary" onclick="showAllTransactions()">
+                    <i class="fas fa-list me-2"></i>
+                    Ver Todos os Lançamentos
+                </button>
+                <div class="row g-2">
+                    <div class="col-6">
+                        <button class="btn btn-outline-info w-100" data-bs-toggle="modal" data-bs-target="#transferModal">
+                            <i class="fas fa-exchange-alt me-2"></i>
+                            Transferência
+                        </button>
+                    </div>
+                    <div class="col-6">
+                        <button class="btn btn-outline-warning w-100" data-bs-toggle="modal" data-bs-target="#vaultModal">
+                            <i class="fas fa-piggy-bank me-2"></i>
+                            Cofre
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Scheduled Transactions Section -->
+        <div class="transactions-section mb-4">
+            <div class="section-title">
+                <i class="fas fa-calendar-alt"></i>
+                Agendados (Ontem, Hoje, Amanhã)
+            </div>
+            <div id="scheduledTransactions">
+                <!-- Agendados serão carregados via JavaScript -->
+                <div class="text-center p-3">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <p class="mb-0 mt-2">Carregando agendados...</p>
+                </div>
+            </div>
+        </div>
+
         <!-- Accounts Section -->
         <div class="accounts-section">
             <div class="section-title">
@@ -523,17 +575,328 @@
             </div>
         </div>
     </div>
-    
+
+    <!-- Modal Todos os Lançamentos -->
+    <div class="modal fade" id="allTransactionsModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Todos os Lançamentos</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Filtros -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <div class="form-floating">
+                                <input type="date" class="form-control" id="filterStartDate">
+                                <label for="filterStartDate">Data Inicial</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-floating">
+                                <input type="date" class="form-control" id="filterEndDate">
+                                <label for="filterEndDate">Data Final</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <div class="form-floating">
+                                <select class="form-select" id="filterAccount">
+                                    <option value="">Todas as contas</option>
+                                    <?php foreach ($accounts as $account): ?>
+                                        <option value="<?= $account['id'] ?>"><?= htmlspecialchars($account['nome']) ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <label for="filterAccount">Conta</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-floating">
+                                <select class="form-select" id="filterType">
+                                    <option value="">Todos os tipos</option>
+                                    <option value="entrada">Receitas</option>
+                                    <option value="saida">Despesas</option>
+                                </select>
+                                <label for="filterType">Tipo</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <button class="btn btn-primary" onclick="applyFilters()">
+                            <i class="fas fa-filter me-2"></i>Aplicar Filtros
+                        </button>
+                        <button class="btn btn-secondary" onclick="clearFilters()">
+                            <i class="fas fa-times me-2"></i>Limpar
+                        </button>
+                    </div>
+                    <!-- Lista de Transações -->
+                    <div id="filteredTransactions">
+                        <div class="text-center p-3">
+                            <i class="fas fa-search"></i>
+                            <p class="mb-0 mt-2">Use os filtros para buscar lançamentos</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Transferência -->
+    <div class="modal fade" id="transferModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Nova Transferência</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="transferForm">
+                        <div class="form-floating mb-3">
+                            <input type="text" class="form-control" id="transferDescricao" name="descricao" required>
+                            <label for="transferDescricao">Descrição *</label>
+                        </div>
+
+                        <div class="form-floating mb-3">
+                            <input type="text" class="form-control" id="transferValor" name="valor" placeholder="R$ 0,00" required>
+                            <label for="transferValor">Valor *</label>
+                        </div>
+
+                        <div class="form-floating mb-3">
+                            <select class="form-select" id="transferFromAccount" name="from_account_id" required>
+                                <option value="">Conta de origem...</option>
+                                <?php foreach ($accounts as $account): ?>
+                                    <option value="<?= $account['id'] ?>"><?= htmlspecialchars($account['nome']) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                            <label for="transferFromAccount">Conta de Origem *</label>
+                        </div>
+
+                        <div class="form-floating mb-3">
+                            <select class="form-select" id="transferToAccount" name="to_account_id" required>
+                                <option value="">Conta de destino...</option>
+                                <?php foreach ($accounts as $account): ?>
+                                    <option value="<?= $account['id'] ?>"><?= htmlspecialchars($account['nome']) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                            <label for="transferToAccount">Conta de Destino *</label>
+                        </div>
+
+                        <div class="form-floating mb-3">
+                            <input type="date" class="form-control" id="transferData" name="data_competencia" required>
+                            <label for="transferData">Data *</label>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-info" onclick="saveTransfer()">
+                        <i class="fas fa-exchange-alt me-2"></i>Transferir
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Cofre -->
+    <div class="modal fade" id="vaultModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Movimentação de Cofre</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="vaultForm">
+                        <div class="alert alert-info mb-3">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Ação:</strong> <span id="actionDescription">Selecione uma ação primeiro</span>
+                        </div>
+
+                        <div class="form-floating mb-3">
+                            <select class="form-select" id="vaultAction" name="action" required onchange="updateActionDescription()">
+                                <option value="">Selecione a ação...</option>
+                                <option value="add">💰 Adicionar ao Cofre</option>
+                                <option value="withdraw">💸 Resgatar do Cofre</option>
+                            </select>
+                            <label for="vaultAction">Ação *</label>
+                        </div>
+
+                        <div class="form-floating mb-3">
+                            <select class="form-select" id="vaultGoal" name="vault_goal_id" required>
+                                <option value="">Carregando objetivos...</option>
+                            </select>
+                            <label for="vaultGoal">Objetivo do Cofre *</label>
+                        </div>
+
+                        <div class="form-floating mb-3">
+                            <select class="form-select" id="vaultAccount" name="account_id" required>
+                                <option value="">Selecione a conta...</option>
+                                <?php foreach ($accounts as $account): ?>
+                                    <option value="<?= $account['id'] ?>"><?= htmlspecialchars($account['nome']) ?> (R$ <?= number_format($account['saldo_atual'], 2, ',', '.') ?>)</option>
+                                <?php endforeach; ?>
+                            </select>
+                            <label for="vaultAccount" id="vaultAccountLabel">Conta *</label>
+                        </div>
+
+                        <div class="form-floating mb-3">
+                            <input type="text" class="form-control" id="vaultValor" name="valor" placeholder="R$ 0,00" required>
+                            <label for="vaultValor">Valor *</label>
+                        </div>
+
+                        <div class="form-floating mb-3">
+                            <input type="text" class="form-control" id="vaultDescricao" name="descricao" required>
+                            <label for="vaultDescricao">Descrição *</label>
+                        </div>
+
+                        <div class="form-floating mb-3">
+                            <input type="date" class="form-control" id="vaultData" name="data_competencia" required>
+                            <label for="vaultData">Data *</label>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-warning" onclick="saveVaultMovement()">
+                        <i class="fas fa-piggy-bank me-2"></i>Confirmar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.0/dist/sweetalert2.min.js"></script>
     
     <script>
+        // Função para atualizar página
+        function refreshPage() {
+            const refreshBtn = document.querySelector('button[onclick="refreshPage()"] i');
+            refreshBtn.classList.add('fa-spin');
+            setTimeout(() => {
+                location.reload();
+            }, 500);
+        }
+
+        // Função para logout
+        function logout() {
+            Swal.fire({
+                title: 'Confirmar Logout',
+                text: 'Deseja realmente sair do sistema?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Sim, sair',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#dc3545'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.location.href = '<?= url('/logout') ?>';
+                }
+            });
+        }
+
+        // Função para carregar transações agendadas
+        function loadScheduledTransactions() {
+            fetch('<?= url('/api/transactions/scheduled') ?>')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        renderScheduledTransactions(data.transactions);
+                    } else {
+                        showScheduledError();
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro ao carregar agendados:', error);
+                    showScheduledError();
+                });
+        }
+
+        function renderScheduledTransactions(transactions) {
+            const container = document.getElementById('scheduledTransactions');
+
+            if (transactions.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center p-3" style="color: #666;">
+                        <i class="fas fa-calendar-check" style="font-size: 2rem; margin-bottom: 10px; opacity: 0.5;"></i>
+                        <p class="mb-0">Nenhum agendamento para os próximos dias</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '';
+            let currentDate = '';
+
+            transactions.forEach(transaction => {
+                const transDate = new Date(transaction.data_competencia);
+                const today = new Date();
+                const yesterday = new Date(today);
+                yesterday.setDate(today.getDate() - 1);
+                const tomorrow = new Date(today);
+                tomorrow.setDate(today.getDate() + 1);
+
+                let dateLabel = '';
+                if (transDate.toDateString() === yesterday.toDateString()) {
+                    dateLabel = 'Ontem';
+                } else if (transDate.toDateString() === today.toDateString()) {
+                    dateLabel = 'Hoje';
+                } else if (transDate.toDateString() === tomorrow.toDateString()) {
+                    dateLabel = 'Amanhã';
+                }
+
+                if (dateLabel !== currentDate) {
+                    currentDate = dateLabel;
+                    html += `<div class="date-separator mt-3 mb-2" style="font-weight: bold; color: #666; font-size: 0.9rem;">${dateLabel}</div>`;
+                }
+
+                const isOverdue = transDate < today && dateLabel === 'Ontem';
+                const statusClass = isOverdue ? 'text-danger' : '';
+
+                html += `
+                    <div class="transaction-item ${statusClass}">
+                        <div class="transaction-icon ${transaction.kind === 'entrada' ? 'income' : 'expense'}">
+                            <i class="fas fa-${transaction.kind === 'entrada' ? 'arrow-up' : 'arrow-down'}"></i>
+                        </div>
+                        <div class="transaction-details">
+                            <div class="transaction-title">${transaction.descricao}</div>
+                            <div class="transaction-info">
+                                <span>${transaction.account_name || 'Conta não definida'}</span>
+                                <span>•</span>
+                                <span>${transaction.category_name || 'Sem categoria'}</span>
+                                ${isOverdue ? '<span class="text-danger ms-2"><i class="fas fa-exclamation-triangle"></i> Vencido</span>' : ''}
+                            </div>
+                        </div>
+                        <div class="transaction-value ${transaction.kind === 'entrada' ? 'income' : 'expense'}">
+                            ${transaction.kind === 'entrada' ? '+' : '-'}R$ ${parseFloat(transaction.valor).toLocaleString('pt-BR', {minimumFractionDigits: 2})}
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        function showScheduledError() {
+            document.getElementById('scheduledTransactions').innerHTML = `
+                <div class="text-center p-3" style="color: #dc3545;">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <p class="mb-0 mt-2">Erro ao carregar agendados</p>
+                </div>
+            `;
+        }
+
         // Configurar data de hoje como padrão
         document.addEventListener('DOMContentLoaded', function() {
+            // Carregar agendados
+            loadScheduledTransactions();
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('incomeData').value = today;
             document.getElementById('expenseData').value = today;
+            document.getElementById('transferData').value = today;
+            document.getElementById('vaultData').value = today;
             
             // Aplicar máscara de moeda
             function formatBrazilianCurrency(value) {
@@ -554,6 +917,8 @@
             
             applyMask(document.getElementById('incomeValor'));
             applyMask(document.getElementById('expenseValor'));
+            applyMask(document.getElementById('transferValor'));
+            applyMask(document.getElementById('vaultValor'));
             
             // Carregar categorias corretas ao abrir modais
             document.getElementById('incomeModal').addEventListener('show.bs.modal', function() {
@@ -562,6 +927,10 @@
             
             document.getElementById('expenseModal').addEventListener('show.bs.modal', function() {
                 updateCategoriesByType('saida', 'expenseCategory');
+            });
+
+            document.getElementById('vaultModal').addEventListener('show.bs.modal', function() {
+                loadVaultGoals();
             });
         });
         
@@ -694,20 +1063,452 @@
             document.getElementById('incomeData').value = today;
             document.getElementById('incomeValor').value = 'R$ 0,00';
         });
-        
+
         document.getElementById('expenseModal').addEventListener('hidden.bs.modal', function() {
             document.getElementById('expenseForm').reset();
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('expenseData').value = today;
             document.getElementById('expenseValor').value = 'R$ 0,00';
         });
+
+        document.getElementById('transferModal').addEventListener('hidden.bs.modal', function() {
+            document.getElementById('transferForm').reset();
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('transferData').value = today;
+            document.getElementById('transferValor').value = 'R$ 0,00';
+        });
+
+        document.getElementById('vaultModal').addEventListener('hidden.bs.modal', function() {
+            document.getElementById('vaultForm').reset();
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('vaultData').value = today;
+            document.getElementById('vaultValor').value = 'R$ 0,00';
+        });
+
+        // Função para verificar atualizações manualmente
+        function checkForUpdates() {
+            if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                navigator.serviceWorker.getRegistration().then(registration => {
+                    if (registration) {
+                        Swal.fire({
+                            title: 'Verificando atualizações...',
+                            text: 'Aguarde enquanto verificamos se há uma nova versão.',
+                            icon: 'info',
+                            showConfirmButton: false,
+                            timer: 2000
+                        });
+
+                        registration.update().then(() => {
+                            console.log('Verificação de atualização solicitada');
+
+                            // Se não houver atualização após 3 segundos, mostrar mensagem
+                            setTimeout(() => {
+                                Swal.fire({
+                                    title: '✅ App atualizado!',
+                                    text: 'Você está usando a versão mais recente.',
+                                    icon: 'success',
+                                    timer: 2000,
+                                    showConfirmButton: false
+                                });
+                            }, 3000);
+                        });
+                    }
+                });
+            } else {
+                Swal.fire('Erro!', 'Service Worker não disponível', 'error');
+            }
+        }
+
+        // Mostrar botão de atualização se PWA estiver ativo
+        if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
+            document.getElementById('updateBtn').style.display = 'block';
+        }
+
+        // Função para atualizar descrição da ação
+        function updateActionDescription() {
+            const action = document.getElementById('vaultAction').value;
+            const description = document.getElementById('actionDescription');
+            const accountLabel = document.getElementById('vaultAccountLabel');
+
+            if (action === 'add') {
+                description.textContent = 'Transferir dinheiro DA CONTA selecionada PARA o cofre';
+                accountLabel.textContent = 'Conta de Origem *';
+            } else if (action === 'withdraw') {
+                description.textContent = 'Transferir dinheiro DO COFRE para a conta selecionada';
+                accountLabel.textContent = 'Conta de Destino *';
+            } else {
+                description.textContent = 'Selecione uma ação primeiro';
+                accountLabel.textContent = 'Conta *';
+            }
+        }
+
+        // Função para carregar objetivos de vault
+        function loadVaultGoals() {
+            fetch('<?= url('/api/vaults/goals') ?>')
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Dados dos vaults recebidos:', data);
+                    if (data.success) {
+                        console.log('Vaults:', data.vaults);
+                        updateVaultGoalsSelect(data.vaults);
+                    } else {
+                        console.error('Erro ao carregar objetivos:', data.message);
+                        const vaultGoalSelect = document.getElementById('vaultGoal');
+                        vaultGoalSelect.innerHTML = '<option value="">Erro ao carregar objetivos</option>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro ao carregar objetivos:', error);
+                    const vaultGoalSelect = document.getElementById('vaultGoal');
+                    vaultGoalSelect.innerHTML = '<option value="">Erro de conexão</option>';
+                });
+        }
+
+        function updateVaultGoalsSelect(vaults) {
+            const vaultGoalSelect = document.getElementById('vaultGoal');
+            vaultGoalSelect.innerHTML = '<option value="">Selecione um objetivo...</option>';
+
+            if (!vaults || vaults.length === 0) {
+                vaultGoalSelect.innerHTML = '<option value="">Nenhum objetivo encontrado</option>';
+                return;
+            }
+
+            vaults.forEach((vault, index) => {
+                console.log(`Vault ${index}:`, vault);
+
+                const option = document.createElement('option');
+                option.value = vault.id || '';
+
+                // Tratar valores undefined/null - usando o campo correto 'titulo'
+                console.log('Título recebido:', vault.titulo, 'Tipo:', typeof vault.titulo);
+                const nome = vault.titulo || 'Objetivo sem nome';
+                const valorAtual = parseFloat(vault.valor_atual) || 0;
+                const valorMeta = parseFloat(vault.valor_meta) || 0;
+                const percentual = valorMeta > 0 ? (valorAtual / valorMeta * 100).toFixed(1) : 0;
+
+                // Verificar se os valores são válidos
+                if (isNaN(valorAtual)) {
+                    console.warn('valor_atual inválido:', vault.valor_atual);
+                }
+                if (isNaN(valorMeta)) {
+                    console.warn('valor_meta inválido:', vault.valor_meta);
+                }
+
+                // Formatar valor atual de forma mais segura
+                let valorFormatado;
+                try {
+                    valorFormatado = valorAtual.toLocaleString('pt-BR', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                    });
+                } catch (e) {
+                    console.error('Erro ao formatar valor:', e);
+                    valorFormatado = '0,00';
+                }
+
+                const textoOpcao = `${nome} (${percentual}% - R$ ${valorFormatado})`;
+                console.log('Texto da opção:', textoOpcao);
+
+                option.textContent = textoOpcao;
+                vaultGoalSelect.appendChild(option);
+            });
+        }
+
+        // Função para mostrar modal de todos os lançamentos
+        function showAllTransactions() {
+            const modal = new bootstrap.Modal(document.getElementById('allTransactionsModal'));
+            modal.show();
+        }
+
+        // Função para aplicar filtros de transações
+        function applyFilters() {
+            const startDate = document.getElementById('filterStartDate').value;
+            const endDate = document.getElementById('filterEndDate').value;
+            const accountId = document.getElementById('filterAccount').value;
+            const type = document.getElementById('filterType').value;
+
+            if (!startDate || !endDate) {
+                Swal.fire('Atenção!', 'Por favor, informe as datas inicial e final', 'warning');
+                return;
+            }
+
+            const params = new URLSearchParams({
+                start_date: startDate,
+                end_date: endDate
+            });
+
+            if (accountId) params.append('account_id', accountId);
+            if (type) params.append('type', type);
+
+            fetch(`<?= url('/api/transactions/filter') ?>?${params}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        renderFilteredTransactions(data.transactions);
+                    } else {
+                        Swal.fire('Erro!', data.message, 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro ao filtrar transações:', error);
+                    Swal.fire('Erro!', 'Erro ao carregar transações', 'error');
+                });
+        }
+
+        // Função para renderizar transações filtradas
+        function renderFilteredTransactions(transactions) {
+            const container = document.getElementById('filteredTransactions');
+
+            if (transactions.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center p-3" style="color: #666;">
+                        <i class="fas fa-search" style="font-size: 2rem; margin-bottom: 10px; opacity: 0.5;"></i>
+                        <p class="mb-0">Nenhum lançamento encontrado</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '';
+            transactions.forEach(transaction => {
+                html += `
+                    <div class="transaction-item">
+                        <div class="transaction-icon ${transaction.kind === 'entrada' ? 'income' : 'expense'}">
+                            <i class="fas fa-${transaction.kind === 'entrada' ? 'arrow-up' : 'arrow-down'}"></i>
+                        </div>
+                        <div class="transaction-details">
+                            <div class="transaction-title">${transaction.descricao}</div>
+                            <div class="transaction-info">
+                                <span>${transaction.account_name || 'Conta não definida'}</span>
+                                <span>•</span>
+                                <span>${new Date(transaction.data_competencia).toLocaleDateString('pt-BR')}</span>
+                                ${transaction.category_name ? `<span>•</span><span>${transaction.category_name}</span>` : ''}
+                            </div>
+                        </div>
+                        <div class="transaction-value ${transaction.kind === 'entrada' ? 'income' : 'expense'}">
+                            ${transaction.kind === 'entrada' ? '+' : '-'}R$ ${parseFloat(transaction.valor).toLocaleString('pt-BR', {minimumFractionDigits: 2})}
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        // Função para limpar filtros
+        function clearFilters() {
+            document.getElementById('filterStartDate').value = '';
+            document.getElementById('filterEndDate').value = '';
+            document.getElementById('filterAccount').value = '';
+            document.getElementById('filterType').value = '';
+
+            document.getElementById('filteredTransactions').innerHTML = `
+                <div class="text-center p-3">
+                    <i class="fas fa-search"></i>
+                    <p class="mb-0 mt-2">Use os filtros para buscar lançamentos</p>
+                </div>
+            `;
+        }
+
+        // Função para salvar transferência
+        function saveTransfer() {
+            const form = document.getElementById('transferForm');
+            const formData = new FormData(form);
+
+            const valorField = document.getElementById('transferValor');
+            const valorNumerico = parseBrazilianCurrency(valorField.value);
+            const fromAccountId = document.getElementById('transferFromAccount').value;
+            const toAccountId = document.getElementById('transferToAccount').value;
+
+            if (fromAccountId === toAccountId) {
+                Swal.fire('Erro!', 'A conta de origem deve ser diferente da conta de destino', 'error');
+                return;
+            }
+
+            formData.set('valor', valorNumerico);
+            formData.set('account_from', fromAccountId);
+            formData.set('account_to', toAccountId);
+
+            fetch('<?= url('/api/transactions/transfer') ?>', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Sucesso!',
+                        text: data.message,
+                        timer: 1500,
+                        showConfirmButton: false
+                    }).then(() => {
+                        const modal = bootstrap.Modal.getInstance(document.getElementById('transferModal'));
+                        modal.hide();
+                        location.reload();
+                    });
+                } else {
+                    Swal.fire('Erro!', data.message, 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Erro:', error);
+                Swal.fire('Erro!', 'Erro ao realizar transferência', 'error');
+            });
+        }
+
+        // Função para movimentação do cofre
+        function saveVaultMovement() {
+            const action = document.getElementById('vaultAction').value;
+            const accountId = document.getElementById('vaultAccount').value;
+            const vaultGoalId = document.getElementById('vaultGoal').value;
+            const valorField = document.getElementById('vaultValor');
+            const valorNumerico = parseBrazilianCurrency(valorField.value);
+            const descricao = document.getElementById('vaultDescricao').value;
+            const dataCompetencia = document.getElementById('vaultData').value;
+
+            console.log('Dados do formulário:', {
+                action, accountId, vaultGoalId, valorNumerico, descricao, dataCompetencia
+            });
+
+            // Validações detalhadas
+            if (!action) {
+                Swal.fire('Erro!', 'Selecione uma ação (Adicionar ou Resgatar)', 'error');
+                return;
+            }
+
+            if (!vaultGoalId) {
+                Swal.fire('Erro!', 'Selecione um objetivo do cofre', 'error');
+                return;
+            }
+
+            if (!accountId) {
+                Swal.fire('Erro!', 'Selecione uma conta', 'error');
+                return;
+            }
+
+            if (!valorNumerico || valorNumerico <= 0) {
+                Swal.fire('Erro!', 'Informe um valor maior que zero', 'error');
+                return;
+            }
+
+            if (!descricao.trim()) {
+                Swal.fire('Erro!', 'Informe uma descrição', 'error');
+                return;
+            }
+
+            if (!dataCompetencia) {
+                Swal.fire('Erro!', 'Selecione uma data', 'error');
+                return;
+            }
+
+            // Determinar endpoint baseado na ação
+            let endpoint = '';
+            let fieldName = '';
+
+            if (action === 'add') {
+                endpoint = '<?= url('/api/vaults/deposit') ?>';
+                fieldName = 'account_from';
+            } else if (action === 'withdraw') {
+                endpoint = '<?= url('/api/vaults/withdraw') ?>';
+                fieldName = 'account_to';
+            } else {
+                Swal.fire('Erro!', 'Ação inválida selecionada', 'error');
+                return;
+            }
+
+            const newFormData = new FormData();
+            newFormData.set('valor', valorNumerico);
+            newFormData.set(fieldName, accountId);
+            newFormData.set('vault_goal_id', vaultGoalId);
+            newFormData.set('descricao', descricao);
+            newFormData.set('data_competencia', dataCompetencia);
+
+            console.log('Enviando para:', endpoint);
+            console.log('Dados enviados:', {
+                valor: valorNumerico,
+                [fieldName]: accountId,
+                vault_goal_id: vaultGoalId,
+                descricao: descricao,
+                data_competencia: dataCompetencia
+            });
+
+            fetch(endpoint, {
+                method: 'POST',
+                body: newFormData
+            })
+            .then(response => {
+                console.log('Response status:', response.status);
+                return response.json();
+            })
+            .then(data => {
+                console.log('Response data:', data);
+                if (data.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Sucesso!',
+                        text: data.message,
+                        timer: 2000,
+                        showConfirmButton: false
+                    }).then(() => {
+                        const modal = bootstrap.Modal.getInstance(document.getElementById('vaultModal'));
+                        modal.hide();
+                        location.reload();
+                    });
+                } else {
+                    Swal.fire('Erro!', data.message || 'Erro desconhecido', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Erro na requisição:', error);
+                Swal.fire('Erro!', 'Erro ao realizar movimentação do cofre: ' + error.message, 'error');
+            });
+        }
         
-        // PWA - Registrar Service Worker
+        // PWA - Registrar Service Worker com estratégia de atualização
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', function() {
                 navigator.serviceWorker.register('<?= url('/mobile-sw.js') ?>')
                     .then(function(registration) {
                         console.log('SW registered successfully: ', registration.scope);
+
+                        // Forçar verificação de atualização
+                        registration.addEventListener('updatefound', () => {
+                            const newWorker = registration.installing;
+                            console.log('Nova versão do SW encontrada');
+
+                            newWorker.addEventListener('statechange', () => {
+                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                    // Nova versão disponível, notificar usuário com SweetAlert2
+                                    Swal.fire({
+                                        title: '🎉 Nova versão disponível!',
+                                        text: 'Uma nova versão do app foi encontrada. Recarregar para atualizar?',
+                                        icon: 'info',
+                                        showCancelButton: true,
+                                        confirmButtonText: '✨ Atualizar Agora',
+                                        cancelButtonText: 'Depois',
+                                        confirmButtonColor: '#007bff'
+                                    }).then((result) => {
+                                        if (result.isConfirmed) {
+                                            newWorker.postMessage({ action: 'skipWaiting' });
+                                            Swal.fire({
+                                                title: 'Atualizando...',
+                                                text: 'Por favor, aguarde enquanto atualizamos o app.',
+                                                icon: 'info',
+                                                showConfirmButton: false,
+                                                timer: 2000
+                                            });
+                                        }
+                                    });
+                                }
+                            });
+                        });
+
+                        // Verificar atualizações periodicamente
+                        setInterval(() => {
+                            registration.update();
+                        }, 60000); // Verificar a cada minuto
+
                         return registration.update();
                     })
                     .then(function() {
@@ -716,6 +1517,12 @@
                     .catch(function(registrationError) {
                         console.error('SW registration failed: ', registrationError);
                     });
+
+                // Escutar mudanças no service worker
+                navigator.serviceWorker.addEventListener('controllerchange', () => {
+                    console.log('Service Worker controllerchange event');
+                    window.location.reload();
+                });
             });
         } else {
             console.log('Service Worker not supported');

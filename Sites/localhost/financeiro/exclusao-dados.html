@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solicitação de Exclusão de Dados - Sistema Financeiro</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 3px solid #dc3545;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #34495e;
+            margin-top: 30px;
+        }
+        p {
+            margin: 15px 0;
+            text-align: justify;
+        }
+        ul {
+            padding-left: 25px;
+        }
+        li {
+            margin: 10px 0;
+        }
+        .warning-box {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .info-box {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .form-section {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 30px 0;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #495057;
+        }
+        input[type="email"],
+        input[type="tel"],
+        input[type="text"],
+        select,
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+        .checkbox-group {
+            display: flex;
+            align-items: flex-start;
+            margin: 15px 0;
+        }
+        input[type="checkbox"] {
+            margin-right: 10px;
+            margin-top: 5px;
+        }
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-right: 10px;
+            transition: background-color 0.3s;
+        }
+        .btn-danger {
+            background-color: #dc3545;
+            color: white;
+        }
+        .btn-danger:hover {
+            background-color: #c82333;
+        }
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+        }
+        .btn-secondary:hover {
+            background-color: #5a6268;
+        }
+        .contact-methods {
+            background-color: #e9ecef;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .timeline {
+            margin: 20px 0;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-left: 4px solid #3498db;
+        }
+        .timeline h3 {
+            color: #3498db;
+            margin-top: 0;
+        }
+        .required {
+            color: #dc3545;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Solicitação de Exclusão de Dados</h1>
+
+        <div class="info-box">
+            <strong>Compromisso com sua Privacidade:</strong> Respeitamos seu direito de controlar seus dados pessoais. Esta página permite que você solicite a exclusão completa de seus dados de nosso sistema, conforme garantido pela Lei Geral de Proteção de Dados (LGPD).
+        </div>
+
+        <h2>Seus Direitos de Privacidade</h2>
+        <p>De acordo com a LGPD (Lei nº 13.709/2018), você tem o direito de:</p>
+        <ul>
+            <li>Solicitar a exclusão completa de seus dados pessoais</li>
+            <li>Revogar consentimento para processamento de dados</li>
+            <li>Solicitar portabilidade de seus dados</li>
+            <li>Corrigir dados incorretos ou desatualizados</li>
+            <li>Obter informações sobre como seus dados são processados</li>
+        </ul>
+
+        <h2>O que Será Excluído</h2>
+        <p>Ao solicitar a exclusão de dados, removeremos permanentemente:</p>
+        <ul>
+            <li><strong>Dados Pessoais:</strong> Nome, e-mail, telefone/WhatsApp, CPF/CNPJ</li>
+            <li><strong>Dados Financeiros:</strong> Transações, categorias, contas bancárias</li>
+            <li><strong>Histórico de Comunicações:</strong> Mensagens do WhatsApp, notificações enviadas</li>
+            <li><strong>Preferências e Configurações:</strong> Todas as personalizações da conta</li>
+            <li><strong>Dados de Acesso:</strong> Logs de login, endereços IP, informações de dispositivo</li>
+            <li><strong>Backups:</strong> Suas informações em todos os nossos sistemas de backup</li>
+        </ul>
+
+        <div class="warning-box">
+            <strong>⚠️ ATENÇÃO - Ação Irreversível:</strong><br>
+            • A exclusão de dados é permanente e não pode ser desfeita<br>
+            • Você perderá acesso completo à sua conta e histórico<br>
+            • Dados financeiros e relatórios serão permanentemente apagados<br>
+            • Não será possível recuperar informações após a exclusão
+        </div>
+
+        <h2>Dados que Podemos Manter</h2>
+        <p>Alguns dados podem ser mantidos por obrigação legal:</p>
+        <ul>
+            <li><strong>Registros Fiscais:</strong> Mantidos por 5 anos conforme legislação tributária</li>
+            <li><strong>Registros de Transações:</strong> Quando exigido por lei de prevenção à lavagem de dinheiro</li>
+            <li><strong>Dados Anonimizados:</strong> Informações que não podem identificá-lo pessoalmente</li>
+        </ul>
+
+        <div class="form-section">
+            <h2>Formulário de Solicitação</h2>
+            <form id="deleteDataForm" action="/delete-data-request" method="POST">
+
+                <div class="form-group">
+                    <label for="email">E-mail da Conta <span class="required">*</span></label>
+                    <input type="email" id="email" name="email" required placeholder="seu@email.com">
+                </div>
+
+                <div class="form-group">
+                    <label for="phone">WhatsApp/Telefone <span class="required">*</span></label>
+                    <input type="tel" id="phone" name="phone" required placeholder="(XX) XXXXX-XXXX">
+                </div>
+
+                <div class="form-group">
+                    <label for="cpf_cnpj">CPF ou CNPJ <span class="required">*</span></label>
+                    <input type="text" id="cpf_cnpj" name="cpf_cnpj" required placeholder="Digite seu CPF ou CNPJ">
+                </div>
+
+                <div class="form-group">
+                    <label for="deletion_type">Tipo de Exclusão <span class="required">*</span></label>
+                    <select id="deletion_type" name="deletion_type" required>
+                        <option value="">Selecione...</option>
+                        <option value="complete">Exclusão Completa (todos os dados)</option>
+                        <option value="personal">Apenas Dados Pessoais (manter dados anonimizados)</option>
+                        <option value="whatsapp">Apenas Dados do WhatsApp</option>
+                        <option value="specific">Dados Específicos (detalhar abaixo)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="reason">Motivo da Solicitação</label>
+                    <textarea id="reason" name="reason" placeholder="Opcional: Informe o motivo da solicitação para nos ajudar a melhorar"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="additional_info">Informações Adicionais</label>
+                    <textarea id="additional_info" name="additional_info" placeholder="Se selecionou 'Dados Específicos', detalhe aqui quais dados deseja excluir"></textarea>
+                </div>
+
+                <div class="checkbox-group">
+                    <input type="checkbox" id="understand" name="understand" required>
+                    <label for="understand">
+                        Entendo que a exclusão de dados é <strong>permanente e irreversível</strong> e que perderei acesso a todos os meus dados e histórico no sistema.
+                    </label>
+                </div>
+
+                <div class="checkbox-group">
+                    <input type="checkbox" id="confirm" name="confirm" required>
+                    <label for="confirm">
+                        Confirmo que sou o titular dos dados ou tenho autorização legal para solicitar esta exclusão.
+                    </label>
+                </div>
+
+                <button type="submit" class="btn btn-danger">Solicitar Exclusão de Dados</button>
+                <button type="button" class="btn btn-secondary" onclick="window.history.back()">Cancelar</button>
+            </form>
+        </div>
+
+        <div class="timeline">
+            <h3>Processo de Exclusão</h3>
+            <ol>
+                <li><strong>Recebimento (Imediato):</strong> Sua solicitação é registrada em nosso sistema</li>
+                <li><strong>Verificação (24-48h):</strong> Confirmamos sua identidade por e-mail ou WhatsApp</li>
+                <li><strong>Processamento (até 10 dias):</strong> Seus dados são excluídos de todos os sistemas</li>
+                <li><strong>Confirmação (ao final):</strong> Você recebe confirmação da exclusão completa</li>
+            </ol>
+        </div>
+
+        <h2>Outras Formas de Contato</h2>
+        <div class="contact-methods">
+            <p>Você também pode solicitar a exclusão de dados através de:</p>
+            <ul>
+                <li><strong>E-mail:</strong> contato@dagsolucaodigital.com.br</li>
+                <li><strong>WhatsApp:</strong> (49) 99812-5870</li>
+                <li><strong>Encarregado de Dados (DPO):</strong> Daylan Audrey</li>
+            </ul>
+            <p><strong>Assunto do E-mail:</strong> "Solicitação de Exclusão de Dados - LGPD"</p>
+            <p><strong>Informações Necessárias:</strong> E-mail da conta, CPF/CNPJ e telefone cadastrado</p>
+        </div>
+
+        <h2>Instruções via WhatsApp</h2>
+        <div class="info-box">
+            <p><strong>Para solicitar exclusão via WhatsApp:</strong></p>
+            <ol>
+                <li>Envie mensagem para (49) 99812-5870</li>
+                <li>Digite: "Solicitar exclusão de dados"</li>
+                <li>Informe o e-mail cadastrado em sua conta</li>
+                <li>Confirme seu CPF/CNPJ</li>
+                <li>Aguarde confirmação e instruções adicionais</li>
+            </ol>
+        </div>
+
+        <h2>Perguntas Frequentes</h2>
+
+        <h3>Posso cancelar a solicitação de exclusão?</h3>
+        <p>Sim, você pode cancelar a solicitação dentro de 48 horas enviando e-mail para contato@dagsolucaodigital.com.br com o assunto "Cancelar Solicitação de Exclusão".</p>
+
+        <h3>Posso fazer backup dos meus dados antes da exclusão?</h3>
+        <p>Sim, recomendamos que exporte seus dados através da função de exportação disponível em sua conta antes de solicitar a exclusão.</p>
+
+        <h3>O que acontece com dados compartilhados com terceiros?</h3>
+        <p>Notificaremos terceiros sobre sua solicitação quando aplicável, mas não podemos garantir a exclusão de dados já compartilhados conforme permitido em nossos Termos de Serviço.</p>
+
+        <h3>Posso criar uma nova conta após a exclusão?</h3>
+        <p>Sim, você pode criar uma nova conta com o mesmo e-mail após a conclusão do processo de exclusão, mas não terá acesso aos dados anteriores.</p>
+
+        <div class="warning-box">
+            <strong>Proteção contra Fraudes:</strong> Para sua segurança, podemos solicitar documentação adicional para confirmar sua identidade antes de processar a exclusão de dados. Isso protege você contra exclusões não autorizadas.
+        </div>
+
+        <script>
+            document.getElementById('deleteDataForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+
+                // Confirmação final
+                if (confirm('Tem certeza que deseja solicitar a exclusão de seus dados? Esta ação é irreversível.')) {
+                    // Aqui você implementaria o envio real do formulário
+                    alert('Solicitação enviada com sucesso! Você receberá um e-mail de confirmação em breve.');
+                    // this.submit(); // Descomentar quando implementar o backend
+                }
+            });
+        </script>
+    </div>
+</body>
+</html>

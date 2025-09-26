@@ -1,48 +1,66 @@
 {
   "name": "Sistema Financeiro",
   "short_name": "Financeiro",
-  "description": "Sistema completo para gestão financeira pessoal e empresarial",
-  "start_url": "/?source=pwa",
+  "description": "Sistema de gestão financeira pessoal e empresarial",
+  "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#007bff",
-  "orientation": "portrait",
   "scope": "/",
+  "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='45' fill='%23007bff'/%3E%3Ctext x='50' y='60' text-anchor='middle' fill='white' font-size='40' font-family='Arial'%3E₹%3C/text%3E%3C/svg%3E",
+      "src": "assets/icons/icon-192x192.png",
       "sizes": "192x192",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "type": "image/png",
+      "purpose": "maskable any"
     },
     {
-      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='45' fill='%23007bff'/%3E%3Ctext x='50' y='60' text-anchor='middle' fill='white' font-size='40' font-family='Arial'%3E₹%3C/text%3E%3C/svg%3E",
-      "sizes": "512x512", 
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "src": "assets/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable any"
     }
   ],
   "shortcuts": [
     {
-      "name": "Nova Transação",
-      "short_name": "Transação", 
-      "description": "Criar uma nova transação rapidamente",
-      "url": "/transactions?action=new"
+      "name": "Nova Receita",
+      "short_name": "Receita",
+      "description": "Lançar nova receita",
+      "url": "/?action=income",
+      "icons": [
+        {
+          "src": "assets/icons/icon-192x192.png",
+          "sizes": "96x96"
+        }
+      ]
     },
     {
-      "name": "Dashboard",
-      "short_name": "Dashboard",
-      "description": "Visualizar resumo financeiro", 
-      "url": "/dashboard"
+      "name": "Nova Despesa",
+      "short_name": "Despesa", 
+      "description": "Lançar nova despesa",
+      "url": "/?action=expense",
+      "icons": [
+        {
+          "src": "assets/icons/icon-192x192.png",
+          "sizes": "96x96"
+        }
+      ]
     },
     {
-      "name": "Transferência",
-      "short_name": "Transferir",
-      "description": "Fazer transferência entre contas",
-      "url": "/transfers?action=new"
+      "name": "Cartões de Crédito",
+      "short_name": "Cartões",
+      "description": "Gerenciar cartões de crédito",
+      "url": "/credit-cards",
+      "icons": [
+        {
+          "src": "assets/icons/icon-192x192.png",
+          "sizes": "96x96"
+        }
+      ]
     }
   ],
-  "categories": ["finance", "productivity", "business"],
+  "categories": ["finance", "business", "productivity"],
   "lang": "pt-BR",
   "dir": "ltr"
 }

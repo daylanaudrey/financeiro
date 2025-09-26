@@ -20,8 +20,8 @@
     <div class="col-lg-3 col-md-6 mb-4">
         <div class="stat-card success">
             <div class="position-relative">
-                <h6 class="mb-2 opacity-90">Receitas (Mês)</h6>
-                <h4 class="mb-0">R$ <?= number_format($monthlyBalance['receitas'] ?? 0, 2, ',', '.') ?></h4>
+                <h6 class="mb-2 opacity-90" style="color: white">Receitas (Mês)</h6>
+                <h4 class="mb-0" style="color: white">R$ <?= number_format($monthlyBalance['receitas'] ?? 0, 2, ',', '.') ?></h4>
                 <i class="fas fa-arrow-up stat-icon"></i>
             </div>
         </div>
@@ -30,8 +30,8 @@
     <div class="col-lg-3 col-md-6 mb-4">
         <div class="stat-card danger">
             <div class="position-relative">
-                <h6 class="mb-2 opacity-90">Despesas (Mês)</h6>
-                <h4 class="mb-0">R$ <?= number_format($monthlyBalance['despesas'] ?? 0, 2, ',', '.') ?></h4>
+                <h6 class="mb-2 opacity-90" style="color: white">Despesas (Mês)</h6>
+                <h4 class="mb-0" style="color: white">R$ <?= number_format($monthlyBalance['despesas'] ?? 0, 2, ',', '.') ?></h4>
                 <i class="fas fa-arrow-down stat-icon"></i>
             </div>
         </div>
@@ -40,11 +40,11 @@
     <div class="col-lg-3 col-md-6 mb-4">
         <div class="stat-card info">
             <div class="position-relative">
-                <h6 class="mb-2 opacity-90">Resultado (Mês)</h6>
+                <h6 class="mb-2 opacity-90" style="color: white">Resultado (Mês)</h6>
                 <?php 
                 $resultado = ($monthlyBalance['receitas'] ?? 0) - ($monthlyBalance['despesas'] ?? 0);
                 ?>
-                <h4 class="mb-0">R$ <?= number_format($resultado, 2, ',', '.') ?></h4>
+                <h4 class="mb-0" style="color: white">R$ <?= number_format($resultado, 2, ',', '.') ?></h4>
                 <i class="fas fa-chart-line stat-icon"></i>
             </div>
         </div>
@@ -53,8 +53,8 @@
     <div class="col-lg-3 col-md-6 mb-4">
         <div class="stat-card warning">
             <div class="position-relative">
-                <h6 class="mb-2 opacity-90">Total de Lançamentos</h6>
-                <h4 class="mb-0"><?= $monthlyBalance['total_transactions'] ?? 0 ?></h4>
+                <h6 class="mb-2 opacity-90" style="color: white">Total de Lançamentos</h6>
+                <h4 class="mb-0" style="color: white"><?= $monthlyBalance['total_transactions'] ?? 0 ?></h4>
                 <i class="fas fa-receipt stat-icon"></i>
             </div>
         </div>
@@ -124,6 +124,20 @@
                     </select>
                 </div>
                 <div class="col-md-2">
+                    <label for="contact_filter" class="form-label">Contato</label>
+                    <select class="form-select form-select-sm" id="contact_filter" name="contact_id">
+                        <option value="">Todos os contatos</option>
+                        <?php foreach ($contacts as $contact): ?>
+                            <option value="<?= $contact['id'] ?>" <?= $filters['contact_id'] == $contact['id'] ? 'selected' : '' ?>>
+                                <?= htmlspecialchars($contact['nome']) ?>
+                                <?php if ($contact['tipo']): ?>
+                                    (<?= ucfirst($contact['tipo']) ?>)
+                                <?php endif; ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div class="col-md-2">
                     <label for="kind_filter" class="form-label">Tipo</label>
                     <select class="form-select form-select-sm" id="kind_filter" name="kind">
                         <option value="">Todos os tipos</option>
@@ -182,6 +196,49 @@
         </div>
     </div>
 
+    <?php if (!empty($filters['contact_id']) && !empty($_GET['contact_name'])): ?>
+    <!-- Cabeçalho do Contato -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="d-flex align-items-center">
+                <div style="width: 50px; height: 50px; background: linear-gradient(135deg, #28a745 0%, #20c997 100%); border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-right: 1rem;">
+                    <i class="fas fa-address-book text-white"></i>
+                </div>
+                <div>
+                    <h5 class="mb-1">Histórico de Lançamentos</h5>
+                    <p class="mb-0 text-muted">
+                        <strong><?= htmlspecialchars($_GET['contact_name']) ?></strong>
+                        <?php 
+                        // Encontrar o contato atual para mostrar informações adicionais
+                        $currentContact = null;
+                        foreach ($contacts as $contact) {
+                            if ($contact['id'] == $filters['contact_id']) {
+                                $currentContact = $contact;
+                                break;
+                            }
+                        }
+                        if ($currentContact): ?>
+                            - <?= ucfirst($currentContact['tipo']) ?>
+                            <?php if (!empty($currentContact['documento'])): ?>
+                                | <?= htmlspecialchars($currentContact['documento']) ?>
+                            <?php endif; ?>
+                            <?php if (!empty($currentContact['email'])): ?>
+                                | <?= htmlspecialchars($currentContact['email']) ?>
+                            <?php endif; ?>
+                        <?php endif; ?>
+                    </p>
+                </div>
+                <div class="ms-auto">
+                    <a href="<?= url('/contacts') ?>" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-arrow-left me-1"></i>
+                        Voltar aos Contatos
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <?php endif; ?>
+
     <!-- Lista de Transações -->
     <div class="card">
         <div class="card-header">
@@ -201,6 +258,9 @@
                             <th>Descrição</th>
                             <th width="120">Conta</th>
                             <th width="120">Categoria</th>
+                            <?php if (empty($filters['contact_id'])): ?>
+                            <th width="120">Contato</th>
+                            <?php endif; ?>
                             <th width="100" class="text-end">Valor</th>
                             <th width="100">Status</th>
                             <th width="80"></th>
@@ -256,11 +316,13 @@
                                         </div>
                                         <div>
                                             <div class="fw-bold"><?= htmlspecialchars($transaction['descricao']) ?></div>
-                                            <?php if ($transaction['contact_name']): ?>
+                                            <?php if (!empty($filters['contact_id']) && $transaction['contact_name']): ?>
                                                 <div class="small text-muted"><?= htmlspecialchars($transaction['contact_name']) ?></div>
                                             <?php endif; ?>
                                             <?php if ($transaction['observacoes']): ?>
-                                                <div class="small text-muted"><?= htmlspecialchars($transaction['observacoes']) ?></div>
+                                                <div class="small text-muted">
+                                                    <?= htmlspecialchars(strlen($transaction['observacoes']) > 50 ? substr($transaction['observacoes'], 0, 50) . '...' : $transaction['observacoes']) ?>
+                                                </div>
                                             <?php endif; ?>
                                         </div>
                                     </div>
@@ -268,7 +330,16 @@
                                 
                                 <td class="align-middle">
                                     <div class="small">
-                                        <div class="fw-bold"><?= htmlspecialchars($transaction['account_name']) ?></div>
+                                        <?php if ($transaction['account_name']): ?>
+                                            <div class="fw-bold"><?= htmlspecialchars($transaction['account_name']) ?></div>
+                                        <?php elseif ($transaction['credit_card_name']): ?>
+                                            <div class="fw-bold text-primary">
+                                                <i class="fab fa-cc-<?= strtolower($transaction['credit_card_bandeira']) ?> me-1"></i>
+                                                <?= htmlspecialchars($transaction['credit_card_name']) ?>
+                                            </div>
+                                        <?php else: ?>
+                                            <div class="text-muted">-</div>
+                                        <?php endif; ?>
                                     </div>
                                 </td>
                                 
@@ -282,9 +353,31 @@
                                     <?php endif; ?>
                                 </td>
                                 
+                                <?php if (empty($filters['contact_id'])): ?>
+                                <td class="align-middle">
+                                    <?php if ($transaction['contact_name']): ?>
+                                        <div class="small">
+                                            <div class="fw-bold"><?= htmlspecialchars($transaction['contact_name']) ?></div>
+                                            <?php if ($transaction['contact_type']): ?>
+                                                <div class="text-muted"><?= ucfirst($transaction['contact_type']) ?></div>
+                                            <?php endif; ?>
+                                        </div>
+                                    <?php else: ?>
+                                        <span class="text-muted">-</span>
+                                    <?php endif; ?>
+                                </td>
+                                <?php endif; ?>
+                                
                                 <td class="align-middle text-end">
                                     <div class="fw-bold" style="color: <?= in_array($transaction['kind'], ['entrada', 'transfer_in']) ? '#28a745' : '#dc3545' ?>">
                                         <?= in_array($transaction['kind'], ['entrada', 'transfer_in']) ? '+' : '-' ?>R$ <?= number_format($transaction['valor'], 2, ',', '.') ?>
+                                        <?php if (!empty($transaction['is_partial']) && $transaction['is_partial']): ?>
+                                            <div class="text-muted small mt-1">
+                                                <i class="fas fa-coins text-warning me-1"></i>
+                                                Parcial: R$ <?= number_format($transaction['valor_pago'], 2, ',', '.') ?> 
+                                                de R$ <?= number_format($transaction['valor_original'], 2, ',', '.') ?>
+                                            </div>
+                                        <?php endif; ?>
                                     </div>
                                 </td>
                                 
@@ -301,12 +394,24 @@
                                             <i class="fas fa-ellipsis-v"></i>
                                         </button>
                                         <ul class="dropdown-menu dropdown-menu-end">
-                                            <?php if ($transaction['status'] !== 'confirmado'): ?>
+                                            <?php if ($transaction['status'] === 'agendado'): ?>
                                                 <li>
-                                                    <a class="dropdown-item text-success" href="#" onclick="confirmTransaction(<?= $transaction['id'] ?>, '<?= htmlspecialchars($transaction['descricao']) ?>', <?= $transaction['valor'] ?>)">
+                                                    <a class="dropdown-item text-success" href="#" onclick="confirmTransaction(<?= $transaction['id'] ?>, '<?= htmlspecialchars($transaction['descricao']) ?>', <?= $transaction['is_partial'] ? $transaction['valor_pendente'] : $transaction['valor'] ?>, <?= $transaction['account_id'] ?? 'null' ?>, <?= $transaction['is_partial'] ? 'true' : 'false' ?>, <?= $transaction['is_partial'] ? $transaction['valor_original'] : $transaction['valor'] ?>)">
                                                         <i class="fas fa-check me-2"></i>Confirmar Lançamento
                                                     </a>
                                                 </li>
+                                                <?php 
+                                                $valorOriginal = $transaction['valor_original'] ?? $transaction['valor'];
+                                                $valorPago = $transaction['valor_pago'] ?? 0;
+                                                $saldoPendente = $valorOriginal - $valorPago;
+                                                if ($saldoPendente > 0): 
+                                                ?>
+                                                    <li>
+                                                        <a class="dropdown-item text-warning" href="#" onclick="partialPayment(<?= $transaction['id'] ?>, '<?= htmlspecialchars($transaction['descricao']) ?>', <?= $saldoPendente ?>, '<?= $transaction['kind'] ?>')">
+                                                            <i class="fas fa-coins me-2"></i>Baixa Parcial
+                                                        </a>
+                                                    </li>
+                                                <?php endif; ?>
                                                 <li><hr class="dropdown-divider"></li>
                                             <?php endif; ?>
                                             <li>
@@ -525,9 +630,18 @@
                     </div>
                     
                     <div class="row">
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <div class="form-floating mb-3">
-                                <select class="form-select" id="transactionAccount" name="account_id" required>
+                                <select class="form-select" id="paymentMethod" name="payment_method" required onchange="togglePaymentFields()">
+                                    <option value="account">Conta Bancária</option>
+                                    <option value="credit_card">Cartão de Crédito</option>
+                                </select>
+                                <label for="paymentMethod">Método *</label>
+                            </div>
+                        </div>
+                        <div class="col-md-3" id="accountField">
+                            <div class="form-floating mb-3">
+                                <select class="form-select" id="transactionAccount" name="account_id">
                                     <option value="">Selecione uma conta...</option>
                                     <?php foreach ($accounts as $account): ?>
                                         <option value="<?= $account['id'] ?>"><?= htmlspecialchars($account['nome']) ?></option>
@@ -536,7 +650,15 @@
                                 <label for="transactionAccount">Conta *</label>
                             </div>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-3" id="creditCardField" style="display: none;">
+                            <div class="form-floating mb-3">
+                                <select class="form-select" id="transactionCreditCard" name="credit_card_id">
+                                    <option value="">Carregando cartões...</option>
+                                </select>
+                                <label for="transactionCreditCard">Cartão de Crédito *</label>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
                             <div class="form-floating mb-3">
                                 <select class="form-select" id="transactionCategory" name="category_id">
                                     <option value="">Selecione uma categoria...</option>
@@ -547,6 +669,25 @@
                                     <?php endforeach; ?>
                                 </select>
                                 <label for="transactionCategory">Categoria</label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-floating mb-3">
+                                <select class="form-select" id="transactionContact" name="contact_id">
+                                    <option value="">Selecione um contato...</option>
+                                    <?php foreach ($contacts as $contact): ?>
+                                        <option value="<?= $contact['id'] ?>">
+                                            <?= htmlspecialchars($contact['nome']) ?>
+                                            <?php if ($contact['tipo']): ?>
+                                                (<?= ucfirst($contact['tipo']) ?>)
+                                            <?php endif; ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <label for="transactionContact">Contato</label>
                             </div>
                         </div>
                         <div class="col-md-4">
@@ -614,6 +755,9 @@
 </div>
 
 <script>
+// Dados das contas para uso no JavaScript
+const availableAccounts = <?= json_encode($accounts) ?>;
+
 let deleteTransactionId = null;
 
 function setTransactionType(type) {
@@ -684,6 +828,20 @@ document.addEventListener('DOMContentLoaded', function() {
         language: {
             noResults: function() {
                 return "Nenhuma categoria encontrada";
+            },
+            searching: function() {
+                return "Pesquisando...";
+            }
+        },
+        dropdownParent: $('#transactionModal')
+    });
+    
+    $('#transactionContact').select2({
+        placeholder: 'Selecione um contato...',
+        allowClear: true,
+        language: {
+            noResults: function() {
+                return "Nenhum contato encontrado";
             },
             searching: function() {
                 return "Pesquisando...";
@@ -866,6 +1024,7 @@ function resetTransactionForm() {
     
     // Limpar e redefinir todos os Select2
     $('#transactionCategory').val(null).trigger('change');
+    $('#transactionContact').val('').trigger('change');
     $('#transactionAccount').val('').trigger('change');
     $('#transactionKind').val('entrada').trigger('change');
     $('#transactionStatus').val('confirmado').trigger('change');
@@ -904,6 +1063,7 @@ function editTransaction(id) {
                 
                 // Usar Select2 para todos os campos
                 $('#transactionAccount').val(transaction.account_id).trigger('change');
+                $('#transactionContact').val(transaction.contact_id || '').trigger('change');
                 $('#transactionKind').val(transaction.kind).trigger('change');
                 $('#transactionStatus').val(transaction.status).trigger('change');
                 
@@ -934,7 +1094,21 @@ function editTransaction(id) {
 
 function saveTransaction() {
     console.log('=== SAVE TRANSACTION START ===');
-    
+
+    // Desabilitar botão de salvar
+    const saveButton = document.querySelector('button[onclick="saveTransaction()"]');
+    const saveButtonText = document.getElementById('transactionSaveButtonText');
+
+    if (saveButton) {
+        saveButton.disabled = true;
+        saveButton.style.opacity = '0.6';
+        saveButton.style.cursor = 'not-allowed';
+    }
+
+    if (saveButtonText) {
+        saveButtonText.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Salvando...';
+    }
+
     const form = document.getElementById('transactionForm');
     const formData = new FormData(form);
     const isEdit = document.getElementById('transactionId').value;
@@ -943,6 +1117,18 @@ function saveTransaction() {
     console.log('Form data before processing:');
     for (let [key, value] of formData.entries()) {
         console.log(`  ${key}: ${value}`);
+    }
+    
+    // Debug específico para account_id
+    const accountField = document.getElementById('transactionAccount');
+    console.log('Account field element:', accountField);
+    console.log('Account field value:', accountField ? accountField.value : 'FIELD NOT FOUND');
+    console.log('Account field visible:', accountField ? (accountField.offsetParent !== null) : 'FIELD NOT FOUND');
+    
+    // Se account_id não estiver no FormData mas o campo existir, adicionar manualmente
+    if (!formData.get('account_id') && accountField && accountField.value) {
+        console.log('Adding missing account_id to FormData:', accountField.value);
+        formData.set('account_id', accountField.value);
     }
     
     // Converter valor formatado para número (formato brasileiro)
@@ -1035,15 +1221,52 @@ function saveTransaction() {
             });
         } else {
             console.error('Server returned error:', data.message);
+            // Reabilitar botão em caso de erro
+            enableSaveButton();
             Swal.fire('Erro!', data.message, 'error');
         }
     })
     .catch(error => {
         console.error('Fetch error:', error);
+        // Reabilitar botão em caso de erro
+        enableSaveButton();
         Swal.fire('Erro!', 'Erro ao salvar lançamento', 'error');
     });
     
     console.log('=== SAVE TRANSACTION END ===');
+}
+
+function enableSaveButton() {
+    const saveButton = document.querySelector('button[onclick="saveTransaction()"]');
+    const saveButtonText = document.getElementById('transactionSaveButtonText');
+    const isEdit = document.getElementById('transactionId').value;
+
+    if (saveButton) {
+        saveButton.disabled = false;
+        saveButton.style.opacity = '1';
+        saveButton.style.cursor = 'pointer';
+    }
+
+    if (saveButtonText) {
+        const buttonText = isEdit ? 'Atualizar' : 'Salvar';
+        const iconClass = isEdit ? 'fa-edit' : 'fa-save';
+        saveButtonText.innerHTML = `<i class="fas ${iconClass} me-2"></i>${buttonText}`;
+    }
+}
+
+function enablePartialPaymentButton() {
+    const partialButton = document.getElementById('partialPaymentButton');
+    const partialButtonText = document.getElementById('partialPaymentButtonText');
+
+    if (partialButton) {
+        partialButton.disabled = false;
+        partialButton.style.opacity = '1';
+        partialButton.style.cursor = 'pointer';
+    }
+
+    if (partialButtonText) {
+        partialButtonText.innerHTML = '<i class="fas fa-coins me-2"></i>Confirmar Baixa Parcial';
+    }
 }
 
 function deleteTransaction(id, descricao) {
@@ -1128,20 +1351,50 @@ document.addEventListener('DOMContentLoaded', function() {
     window.toggleRecurrenceFields = toggleRecurrenceFields;
 });
 
-// Função para confirmar lançamento (permite editar data e valor)
-function confirmTransaction(transactionId, description, originalValue) {
+// Função para confirmar lançamento (permite editar data, valor e conta)
+function confirmTransaction(transactionId, description, originalValue, currentAccountId, isPartial = false, totalValue = null) {
     const valorOriginal = parseFloat(originalValue || 0);
+    const valorTotal = parseFloat(totalValue || originalValue || 0);
     const valorFormatado = new Intl.NumberFormat('pt-BR', {
         style: 'currency',
         currency: 'BRL'
     }).format(valorOriginal);
+
+    // Preparar texto explicativo para baixas parciais
+    let partialInfo = '';
+    if (isPartial === 'true' || isPartial === true) {
+        const totalFormatado = new Intl.NumberFormat('pt-BR', {
+            style: 'currency',
+            currency: 'BRL'
+        }).format(valorTotal);
+        partialInfo = `
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i>
+                <strong>Transação com baixas parciais:</strong><br>
+                Valor total original: ${totalFormatado}<br>
+                Valor pendente para confirmação: ${valorFormatado}
+            </div>
+        `;
+    }
+    
+    // Construir opções de contas usando dados JavaScript
+    let accountOptions = '';
+    if (availableAccounts && availableAccounts.length > 0) {
+        availableAccounts.forEach(account => {
+            const selected = currentAccountId == account.id ? 'selected' : '';
+            accountOptions += `<option value="${account.id}" ${selected}>${account.nome}</option>`;
+        });
+    } else {
+        accountOptions = '<option value="">Nenhuma conta disponível</option>';
+    }
     
     Swal.fire({
         title: 'Confirmar Lançamento',
         html: `
             <div class="text-start mb-3">
                 <p><strong>Descrição:</strong> ${description}</p>
-                <p><strong>Valor Original:</strong> ${valorFormatado}</p>
+                <p><strong>Valor ${isPartial === 'true' || isPartial === true ? 'Pendente' : 'Original'}:</strong> ${valorFormatado}</p>
+                ${partialInfo}
                 <p class="text-muted">Esta ação irá confirmar o lançamento e atualizar o saldo da conta.</p>
             </div>
             <div class="form-group text-start">
@@ -1149,6 +1402,13 @@ function confirmTransaction(transactionId, description, originalValue) {
                 <input type="text" id="confirmValue" class="form-control currency-mask" 
                        value="${valorFormatado}" placeholder="R$ 0,00">
                 <small class="text-muted">Ajuste o valor caso haja juros, multas ou descontos</small>
+            </div>
+            <div class="form-group text-start mt-3">
+                <label for="confirmAccount" class="form-label">Conta de Pagamento:</label>
+                <select id="confirmAccount" class="form-select">
+                    ${accountOptions}
+                </select>
+                <small class="text-muted">Selecione a conta onde o pagamento foi realizado</small>
             </div>
             <div class="form-group text-start mt-3">
                 <label for="confirmDate" class="form-label">Data de Confirmação:</label>
@@ -1165,18 +1425,26 @@ function confirmTransaction(transactionId, description, originalValue) {
         preConfirm: () => {
             const valueInput = document.getElementById('confirmValue');
             const dateInput = document.getElementById('confirmDate');
+            const accountInput = document.getElementById('confirmAccount');
             
             const newValue = valueInput.value;
             const confirmDate = dateInput.value;
+            const accountId = accountInput.value;
             
             if (!newValue || newValue === 'R$ 0,00' || !confirmDate) {
                 Swal.showValidationMessage('Valor e data de confirmação são obrigatórios');
                 return false;
             }
             
+            if (!accountId) {
+                Swal.showValidationMessage('Conta de pagamento é obrigatória');
+                return false;
+            }
+            
             return {
                 valor: newValue,
-                data_pagamento: confirmDate
+                data_pagamento: confirmDate,
+                account_id: accountId
             };
         },
         didOpen: () => {
@@ -1206,6 +1474,7 @@ function confirmTransaction(transactionId, description, originalValue) {
             formData.append('id', transactionId);
             formData.append('valor', result.value.valor);
             formData.append('data_pagamento', result.value.data_pagamento);
+            formData.append('account_id', result.value.account_id);
             
             fetch('<?= url('/api/transactions/confirm') ?>', {
                 method: 'POST',
@@ -1234,4 +1503,292 @@ function confirmTransaction(transactionId, description, originalValue) {
         }
     });
 }
+
+// Função para alternar entre conta bancária e cartão de crédito
+function togglePaymentFields() {
+    const paymentMethod = document.getElementById('paymentMethod').value;
+    const accountField = document.getElementById('accountField');
+    const creditCardField = document.getElementById('creditCardField');
+    const accountSelect = document.getElementById('transactionAccount');
+    const creditCardSelect = document.getElementById('transactionCreditCard');
+    
+    if (paymentMethod === 'credit_card') {
+        // Mostrar campo de cartão e esconder conta
+        accountField.style.display = 'none';
+        creditCardField.style.display = 'block';
+        
+        // Remover required da conta e adicionar no cartão
+        accountSelect.removeAttribute('required');
+        creditCardSelect.setAttribute('required', 'required');
+        
+        // Carregar cartões se não foram carregados
+        loadCreditCards();
+        
+        // Cartão só permite despesas
+        setTransactionType('saida');
+        document.querySelector('button[onclick="setTransactionType(\'entrada\')"]').style.display = 'none';
+        
+    } else {
+        // Mostrar campo de conta e esconder cartão
+        accountField.style.display = 'block';
+        creditCardField.style.display = 'none';
+        
+        // Remover required do cartão e adicionar na conta
+        creditCardSelect.removeAttribute('required');
+        accountSelect.setAttribute('required', 'required');
+        
+        // Mostrar botão de receita novamente
+        document.querySelector('button[onclick="setTransactionType(\'entrada\')"]').style.display = 'inline-block';
+    }
+}
+
+// Função para carregar cartões de crédito ativos
+function loadCreditCards() {
+    const creditCardSelect = document.getElementById('transactionCreditCard');
+    
+    // Só carregar se ainda não foi carregado
+    if (creditCardSelect.options.length === 1 && creditCardSelect.options[0].value === '') {
+        fetch('<?= url('/api/credit-cards/active') ?>')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                creditCardSelect.innerHTML = '<option value="">Selecione um cartão...</option>';
+                
+                data.cards.forEach(card => {
+                    const option = document.createElement('option');
+                    option.value = card.id;
+                    option.textContent = `${card.nome} (Limite: R$ ${parseFloat(card.limite_disponivel).toLocaleString('pt-BR', {minimumFractionDigits: 2})})`;
+                    option.dataset.limiteDisponivel = card.limite_disponivel;
+                    creditCardSelect.appendChild(option);
+                });
+            } else {
+                creditCardSelect.innerHTML = '<option value="">Nenhum cartão ativo encontrado</option>';
+            }
+        })
+        .catch(error => {
+            console.error('Erro ao carregar cartões:', error);
+            creditCardSelect.innerHTML = '<option value="">Erro ao carregar cartões</option>';
+        });
+    }
+}
+
+// Inicializar campos quando modal abre
+document.getElementById('transactionModal').addEventListener('shown.bs.modal', function() {
+    togglePaymentFields(); // Garantir estado correto ao abrir modal
+});
+
+// Função para abrir modal de baixa parcial
+function partialPayment(id, description, value, type) {
+    document.getElementById('partialTransactionId').value = id;
+    document.getElementById('partialTransactionDescription').textContent = description;
+    document.getElementById('partialTransactionValue').textContent = formatCurrency(value);
+    document.getElementById('partialPaymentValue').value = '';
+    document.getElementById('partialPaymentValue').setAttribute('data-max-value', value);
+    
+    const typeText = type === 'entrada' ? 'Receita' : 'Despesa';
+    document.getElementById('partialTransactionType').textContent = typeText;
+    
+    // Aplicar máscara monetária
+    applyCurrencyMask(document.getElementById('partialPaymentValue'));
+    
+    new bootstrap.Modal(document.getElementById('partialPaymentModal')).show();
+}
+
+// Função para confirmar baixa parcial
+function confirmPartialPayment() {
+    // Desabilitar botão de salvar
+    const partialButton = document.getElementById('partialPaymentButton');
+    const partialButtonText = document.getElementById('partialPaymentButtonText');
+
+    if (partialButton) {
+        partialButton.disabled = true;
+        partialButton.style.opacity = '0.6';
+        partialButton.style.cursor = 'not-allowed';
+    }
+
+    if (partialButtonText) {
+        partialButtonText.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Processando...';
+    }
+
+    const transactionId = document.getElementById('partialTransactionId').value;
+    const partialValueMasked = document.getElementById('partialPaymentValue').value;
+    const accountId = document.getElementById('partialPaymentAccount').value;
+
+    // Converter valor mascarado para decimal
+    const partialValue = convertBrazilianCurrencyToFloat(partialValueMasked);
+
+    if (!partialValue || partialValue <= 0) {
+        enablePartialPaymentButton();
+        Swal.fire('Erro!', 'Por favor, informe um valor válido para a baixa parcial.', 'error');
+        return;
+    }
+
+    if (!accountId) {
+        enablePartialPaymentButton();
+        Swal.fire('Erro!', 'Por favor, selecione uma conta para a baixa parcial.', 'error');
+        return;
+    }
+
+    const maxValue = parseFloat(document.getElementById('partialPaymentValue').getAttribute('data-max-value'));
+    if (partialValue > maxValue) {
+        enablePartialPaymentButton();
+        Swal.fire('Erro!', 'O valor da baixa não pode ser maior que o valor total da transação.', 'error');
+        return;
+    }
+
+    // Enviar requisição para o servidor
+    fetch('<?= url('/api/transactions/partial-payment') ?>', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            transaction_id: transactionId,
+            valor_pago: partialValue,
+            account_id: accountId
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            Swal.fire('Sucesso!', data.message, 'success').then(() => {
+                bootstrap.Modal.getInstance(document.getElementById('partialPaymentModal')).hide();
+                location.reload();
+            });
+        } else {
+            // Reabilitar botão em caso de erro
+            enablePartialPaymentButton();
+            Swal.fire('Erro!', data.message, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Erro:', error);
+        // Reabilitar botão em caso de erro
+        enablePartialPaymentButton();
+        Swal.fire('Erro!', 'Erro ao processar baixa parcial', 'error');
+    });
+}
+
+function formatCurrency(value) {
+    return 'R$ ' + parseFloat(value).toLocaleString('pt-BR', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
+}
+
+// Função para aplicar máscara monetária
+function applyCurrencyMask(input) {
+    input.addEventListener('input', function(e) {
+        let value = e.target.value;
+        
+        // Remove tudo que não é dígito
+        value = value.replace(/\D/g, '');
+        
+        // Adiciona zeros à esquerda se necessário
+        value = value.padStart(3, '0');
+        
+        // Insere a vírgula antes dos dois últimos dígitos
+        value = value.slice(0, -2) + ',' + value.slice(-2);
+        
+        // Remove zeros à esquerda desnecessários, mas mantém pelo menos um zero antes da vírgula
+        value = value.replace(/^0+/, '') || '0';
+        if (value.startsWith(',')) {
+            value = '0' + value;
+        }
+        
+        // Adiciona pontos para milhares
+        const parts = value.split(',');
+        parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+        value = parts.join(',');
+        
+        e.target.value = value;
+    });
+    
+    // Limpar campo ao focar se estiver vazio ou com valor inicial
+    input.addEventListener('focus', function(e) {
+        if (e.target.value === '0,00' || e.target.value === '') {
+            e.target.value = '';
+        }
+    });
+    
+    // Definir valor padrão ao perder foco se estiver vazio
+    input.addEventListener('blur', function(e) {
+        if (e.target.value === '') {
+            e.target.value = '0,00';
+        }
+    });
+}
+
+// Função para converter valor brasileiro mascarado para float
+function convertBrazilianCurrencyToFloat(value) {
+    if (!value) return 0;
+    
+    // Remove pontos (separadores de milhares) e substitui vírgula por ponto
+    const cleanValue = value.replace(/\./g, '').replace(',', '.');
+    
+    return parseFloat(cleanValue) || 0;
+}
 </script>
+
+<!-- Modal de Baixa Parcial -->
+<div class="modal fade" id="partialPaymentModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Baixa Parcial</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <strong>Transação:</strong> <span id="partialTransactionDescription"></span>
+                </div>
+                <div class="mb-3">
+                    <strong>Tipo:</strong> <span id="partialTransactionType"></span>
+                </div>
+                <div class="mb-3">
+                    <strong>Valor Total:</strong> <span id="partialTransactionValue"></span>
+                </div>
+                
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    A baixa parcial permite registrar que parte do valor desta transação foi paga/recebida, mantendo o saldo pendente para futuras baixas.
+                </div>
+                
+                <div class="mb-3">
+                    <label for="partialPaymentValue" class="form-label">Valor da Baixa <span class="text-danger">*</span></label>
+                    <div class="input-group">
+                        <span class="input-group-text">R$</span>
+                        <input type="text" class="form-control" id="partialPaymentValue"
+                               required
+                               placeholder="0,00"
+                               data-mask="currency">
+                    </div>
+                    <div class="form-text">Informe o valor que foi efetivamente pago/recebido</div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="partialPaymentAccount" class="form-label">Conta para Baixa <span class="text-danger">*</span></label>
+                    <select class="form-select" id="partialPaymentAccount" required>
+                        <option value="">Selecione a conta...</option>
+                        <?php foreach ($accounts as $account): ?>
+                            <option value="<?= $account['id'] ?>" data-tipo="<?= $account['tipo'] ?>">
+                                <?= htmlspecialchars($account['nome']) ?>
+                                (<?= $account['tipo'] === 'conta_corrente' ? 'Conta Corrente' : ($account['tipo'] === 'poupanca' ? 'Poupança' : 'Dinheiro') ?>)
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                    <div class="form-text">Escolha em qual conta o valor será creditado/debitado</div>
+                </div>
+
+                <input type="hidden" id="partialTransactionId">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-warning" id="partialPaymentButton" onclick="confirmPartialPayment()">
+                    <i class="fas fa-coins me-2"></i>
+                    <span id="partialPaymentButtonText">Confirmar Baixa Parcial</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,6 +1,13 @@
 <?php
 require_once 'BaseController.php';
 require_once 'AuthMiddleware.php';
+require_once __DIR__ . '/../models/Transaction.php';
+require_once __DIR__ . '/../models/Account.php';
+require_once __DIR__ . '/../models/AuditLog.php';
+require_once __DIR__ . '/../models/Category.php';
+require_once __DIR__ . '/../models/Contact.php';
+require_once __DIR__ . '/../models/CreditCard.php';
+require_once __DIR__ . '/../services/TeamNotificationService.php';
 
 class TransactionController extends BaseController {
     private $transactionModel;
@@ -8,6 +15,9 @@ class TransactionController extends BaseController {
     private $auditModel;
     private $categoryModel;
     private $costCenterModel;
+    private $contactModel;
+    private $creditCardModel;
+    private $teamNotificationService;
     
     public function __construct() {
         parent::__construct();
@@ -15,14 +25,15 @@ class TransactionController extends BaseController {
         $this->accountModel = new Account();
         $this->auditModel = new AuditLog();
         $this->categoryModel = new Category();
-        $this->costCenterModel = new CostCenter();
+        $this->contactModel = new Contact();
+        $this->creditCardModel = new CreditCard();
+        $this->teamNotificationService = new TeamNotificationService();
     }
     
     public function index() {
         $user = AuthMiddleware::requireAuth();
         
-        // Por enquanto, usar org_id = 1
-        $orgId = 1;
+        $orgId = $this->getCurrentOrgId();
         
         // Parâmetros de paginação
         $page = max(1, (int)($_GET['page'] ?? 1));
@@ -33,7 +44,7 @@ class TransactionController extends BaseController {
         $filters = [
             'account_id' => $_GET['account_id'] ?? '',
             'category_id' => $_GET['category_id'] ?? '',
-            'cost_center_id' => $_GET['cost_center_id'] ?? '',
+            'contact_id' => $_GET['contact_id'] ?? '',
             'status' => $_GET['status'] ?? '',
             'kind' => $_GET['kind'] ?? '',
             'date_from' => $_GET['date_from'] ?? '',
@@ -54,9 +65,9 @@ class TransactionController extends BaseController {
         
         $accounts = $this->accountModel->getActiveAccountsByOrg($orgId);
         $categories = $this->categoryModel->getActiveCategories($orgId);
-        $costCenters = $this->costCenterModel->getActiveCostCenters($orgId);
+        $contacts = $this->contactModel->getContactsByOrg($orgId);
         
-        // Calcular balanço do mês atual
+        // Calcular balanço do mês atual (incluindo baixas parciais)
         $currentYear = date('Y');
         $currentMonth = date('m');
         $monthlyBalance = $this->transactionModel->getMonthlyBalance($orgId, $currentYear, $currentMonth);
@@ -71,7 +82,7 @@ class TransactionController extends BaseController {
             'transactions' => $transactions,
             'accounts' => $accounts,
             'categories' => $categories,
-            'costCenters' => $costCenters,
+            'contacts' => $contacts,
             'monthlyBalance' => $monthlyBalance,
             'statusOptions' => $statusOptions,
             'kindOptions' => $kindOptions,
@@ -92,8 +103,7 @@ class TransactionController extends BaseController {
         // Verificar se está logado
         $user = AuthMiddleware::requireAuth();
         
-        // Por enquanto, usar org_id = 1
-        $orgId = 1;
+        $orgId = $this->getCurrentOrgId();
         
         // Instanciar models necessários
         $accountModel = new Account();
@@ -114,7 +124,7 @@ class TransactionController extends BaseController {
     public function getTransfers() {
         try {
             $user = AuthMiddleware::requireAuth();
-            $orgId = 1; // Por enquanto fixo
+            $orgId = $this->getCurrentOrgId(); // Por enquanto fixo
             
             // Buscar transferências (transações com transfer_pair_id)
             $transfers = $this->transactionModel->getTransfers($orgId);
@@ -140,12 +150,20 @@ class TransactionController extends BaseController {
             $user = AuthMiddleware::requireAuth();
             error_log("Auth successful, user: " . json_encode($user));
             
+            $paymentMethod = $_POST['payment_method'] ?? 'account';
             $accountId = (int)($_POST['account_id'] ?? 0);
+            $creditCardId = (int)($_POST['credit_card_id'] ?? 0);
             $kind = $_POST['kind'] ?? '';
             $valor = floatval($_POST['valor'] ?? 0);
             $dataCompetencia = $_POST['data_competencia'] ?? '';
             $dataPagamento = !empty($_POST['data_pagamento']) ? $_POST['data_pagamento'] : null;
             $status = $_POST['status'] ?? 'confirmado';
+            
+            // Se o status é confirmado e data_pagamento não foi fornecida, usar data_competencia
+            if ($status === 'confirmado' && !$dataPagamento) {
+                $dataPagamento = $dataCompetencia;
+            }
+            
             $categoryId = (int)($_POST['category_id'] ?? 0) ?: null;
             $contactId = (int)($_POST['contact_id'] ?? 0) ?: null;
             $descricao = trim($_POST['descricao'] ?? '');
@@ -161,10 +179,23 @@ class TransactionController extends BaseController {
             // Validações
             error_log("Starting validations...");
             
-            if (!$accountId) {
-                error_log("VALIDATION FAILED: Account ID missing");
-                $this->json(['success' => false, 'message' => 'Conta é obrigatória']);
-                return;
+            if ($paymentMethod === 'credit_card') {
+                if (!$creditCardId) {
+                    error_log("VALIDATION FAILED: Credit card ID missing");
+                    $this->json(['success' => false, 'message' => 'Cartão de crédito é obrigatório']);
+                    return;
+                }
+                if ($kind === 'entrada') {
+                    error_log("VALIDATION FAILED: Credit card cannot have income transaction");
+                    $this->json(['success' => false, 'message' => 'Cartão de crédito só permite despesas']);
+                    return;
+                }
+            } else {
+                if (!$accountId) {
+                    error_log("VALIDATION FAILED: Account ID missing");
+                    $this->json(['success' => false, 'message' => 'Conta é obrigatória']);
+                    return;
+                }
             }
             
             if (empty($kind)) {
@@ -193,19 +224,42 @@ class TransactionController extends BaseController {
             
             error_log("All validations passed!");
             
-            // Verificar se a conta existe e é ativa
-            error_log("Checking account with ID: $accountId");
-            $account = $this->accountModel->findById($accountId);
-            if (!$account || !$account['ativo']) {
-                error_log("ACCOUNT VALIDATION FAILED: Account not found or inactive");
-                $this->json(['success' => false, 'message' => 'Conta inválida ou inativa']);
-                return;
+            // Verificar conta ou cartão baseado no método de pagamento
+            if ($paymentMethod === 'credit_card') {
+                error_log("Checking credit card with ID: $creditCardId");
+                $creditCard = $this->creditCardModel->findById($creditCardId);
+                if (!$creditCard || !$creditCard['ativo']) {
+                    error_log("CREDIT CARD VALIDATION FAILED: Card not found or inactive");
+                    $this->json(['success' => false, 'message' => 'Cartão de crédito inválido ou inativo']);
+                    return;
+                }
+                
+                // Verificar limite disponível
+                $limiteDisponivel = $creditCard['limite_total'] - $creditCard['limite_usado'];
+                if ($valor > $limiteDisponivel) {
+                    error_log("CREDIT CARD VALIDATION FAILED: Insufficient limit");
+                    $this->json(['success' => false, 'message' => 'Limite insuficiente no cartão de crédito']);
+                    return;
+                }
+                
+                error_log("Credit card found: " . json_encode($creditCard));
+                $accountId = null; // Para transações com cartão, account_id é nulo
+            } else {
+                error_log("Checking account with ID: $accountId");
+                $account = $this->accountModel->findById($accountId);
+                if (!$account || !$account['ativo']) {
+                    error_log("ACCOUNT VALIDATION FAILED: Account not found or inactive");
+                    $this->json(['success' => false, 'message' => 'Conta inválida ou inativa']);
+                    return;
+                }
+                error_log("Account found: " . json_encode($account));
+                $creditCardId = null; // Para transações normais, credit_card_id é nulo
             }
-            error_log("Account found: " . json_encode($account));
             
             $transactionData = [
-                'org_id' => 1, // Por enquanto fixo
+                'org_id' => $this->getCurrentOrgId(),
                 'account_id' => $accountId,
+                'credit_card_id' => $creditCardId,
                 'kind' => $kind,
                 'valor' => $valor,
                 'data_competencia' => $dataCompetencia,
@@ -249,7 +303,7 @@ class TransactionController extends BaseController {
                 $this->auditModel->logUserAction(
                     $user['id'],
                     1,
-                    'transaction',
+                    'transactions',
                     'create',
                     $transactionId,
                     null,
@@ -257,32 +311,70 @@ class TransactionController extends BaseController {
                     $auditMessage
                 );
                 
-                error_log("SUCCESS: Transaction created successfully with ID: $transactionId");
+                // Atualizar limite do cartão se for transação com cartão
+                if ($paymentMethod === 'credit_card' && $creditCardId) {
+                    $this->creditCardModel->updateLimiteUsado($creditCardId, $valor, 'add');
+                    error_log("Credit card limit updated for card ID: $creditCardId");
+                }
                 
+                error_log("SUCCESS: Transaction created successfully with ID: $transactionId");
+
+                // Enviar notificações WhatsApp APENAS para transações confirmadas
+                if ($status === 'confirmado') {
+                    try {
+                        $orgId = $this->getCurrentOrgId();
+                        $transactionData = [
+                            'id' => $transactionId,
+                            'descricao' => $descricao,
+                            'valor' => $valor,
+                            'kind' => $kind,
+                            'data_competencia' => $dataCompetencia,
+                            'categoria' => $categoryId ? $this->categoryModel->findById($categoryId)['nome'] ?? null : null,
+                            'conta' => $paymentMethod === 'account' && $accountId ?
+                                      $this->accountModel->findById($accountId)['nome'] ?? null :
+                                      ($paymentMethod === 'credit_card' && $creditCardId ?
+                                       $this->creditCardModel->findById($creditCardId)['nome'] ?? null : null)
+                        ];
+
+                        // Enviar notificação com opção assíncrona (mas ainda processando diretamente)
+                        $this->teamNotificationService->notifyNewTransaction($orgId, $transactionData);
+                        error_log("WhatsApp notification sent for transaction ID: $transactionId");
+                    } catch (Exception $notificationError) {
+                        error_log("Failed to send WhatsApp notification: " . $notificationError->getMessage());
+                        // Continuar mesmo se a notificação falhar
+                    }
+                } else {
+                    error_log("Notification skipped - transaction status: $status (only confirmed transactions receive notifications)");
+                }
+
                 $message = 'Lançamento criado com sucesso!';
                 if (!empty($recurringIds)) {
                     $message .= ' Foram gerados ' . count($recurringIds) . ' lançamentos recorrentes.';
                 }
                 
+                error_log("=== TRANSACTION CREATE END - SUCCESS ===");
                 $this->json([
                     'success' => true,
                     'message' => $message,
                     'transaction_id' => $transactionId,
                     'recurring_ids' => $recurringIds
                 ]);
+                return; // Terminar execução após enviar JSON
             } else {
                 error_log("ERROR: Transaction creation failed");
+                error_log("=== TRANSACTION CREATE END - FAILED ===");
                 $this->json(['success' => false, 'message' => 'Erro ao criar lançamento']);
+                return; // Terminar execução após enviar JSON
             }
-            
+
         } catch (Exception $e) {
             error_log("EXCEPTION in TransactionController::create(): " . $e->getMessage());
             error_log("Exception file: " . $e->getFile() . ":" . $e->getLine());
             error_log("Exception trace: " . $e->getTraceAsString());
+            error_log("=== TRANSACTION CREATE END - EXCEPTION ===");
             $this->json(['success' => false, 'message' => 'Erro interno do servidor']);
+            return; // Terminar execução após enviar JSON
         }
-        
-        error_log("=== TRANSACTION CREATE END ===");
     }
     
     public function transfer() {
@@ -323,15 +415,18 @@ class TransactionController extends BaseController {
                 return;
             }
             
+            // Obter org_id do usuário
+            $orgId = $this->getCurrentOrgId();
+            
             // Criar par de transferências
-            $transferId = $this->transactionModel->createTransfer($accountFromId, $accountToId, $valor, $dataCompetencia, $descricao, $observacoes, $user['id']);
+            $transferId = $this->transactionModel->createTransfer($accountFromId, $accountToId, $valor, $dataCompetencia, $descricao, $observacoes, $user['id'], $orgId);
             
             if ($transferId) {
                 // Log da auditoria
                 $this->auditModel->logUserAction(
                     $user['id'],
                     1,
-                    'transaction',
+                    'transactions',
                     'transfer',
                     $transferId,
                     null,
@@ -364,22 +459,57 @@ class TransactionController extends BaseController {
             $user = AuthMiddleware::requireAuth();
             
             $transactionId = (int)($_POST['id'] ?? 0);
+            
             $accountId = (int)($_POST['account_id'] ?? 0);
+            
+            // Se account_id não foi enviado ou é 0, manter o valor atual
+            if ($accountId === 0) {
+                $currentData = $this->transactionModel->findById($transactionId);
+                if ($currentData && $currentData['account_id']) {
+                    $accountId = $currentData['account_id'];
+                }
+            }
             $kind = $_POST['kind'] ?? '';
             $valor = floatval($_POST['valor'] ?? 0);
             $dataCompetencia = $_POST['data_competencia'] ?? '';
             $dataPagamento = !empty($_POST['data_pagamento']) ? $_POST['data_pagamento'] : null;
             $status = $_POST['status'] ?? 'confirmado';
+            
+            // Se o status é confirmado e data_pagamento não foi fornecida, usar data_competencia
+            if ($status === 'confirmado' && !$dataPagamento) {
+                $dataPagamento = $dataCompetencia;
+            }
+            
             $categoryId = (int)($_POST['category_id'] ?? 0) ?: null;
             $contactId = (int)($_POST['contact_id'] ?? 0) ?: null;
             $descricao = trim($_POST['descricao'] ?? '');
             $observacoes = trim($_POST['observacoes'] ?? '') ?: null;
             
+            // Se category_id não foi enviado corretamente, manter o valor atual
+            if ($categoryId === null) {
+                if (!isset($currentData)) {
+                    $currentData = $this->transactionModel->findById($transactionId);
+                }
+                if ($currentData && $currentData['category_id']) {
+                    $categoryId = $currentData['category_id'];
+                }
+            }
+            
+            // Se contact_id não foi enviado corretamente, manter o valor atual  
+            if ($contactId === null) {
+                if (!isset($currentData)) {
+                    $currentData = $this->transactionModel->findById($transactionId);
+                }
+                if ($currentData && $currentData['contact_id']) {
+                    $contactId = $currentData['contact_id'];
+                }
+            }
+            
             if (!$transactionId) {
                 $this->json(['success' => false, 'message' => 'ID do lançamento é obrigatório']);
             }
             
-            // Buscar dados atuais para auditoria
+            // Buscar dados atuais para auditoria  
             $oldData = $this->transactionModel->findById($transactionId);
             if (!$oldData) {
                 $this->json(['success' => false, 'message' => 'Lançamento não encontrado']);
@@ -401,17 +531,22 @@ class TransactionController extends BaseController {
             $success = $this->transactionModel->updateTransaction($transactionId, $updateData);
             
             if ($success) {
-                // Log da auditoria
-                $this->auditModel->logUserAction(
-                    $user['id'],
-                    1,
-                    'transaction',
-                    'update',
-                    $transactionId,
-                    $oldData,
-                    $updateData,
-                    "Lançamento atualizado: {$descricao}"
-                );
+                try {
+                    // Log da auditoria
+                    $this->auditModel->logUserAction(
+                        $user['id'],
+                        1,
+                        'transactions',
+                        'update',
+                        $transactionId,
+                        $oldData,
+                        $updateData,
+                        "Lançamento atualizado: {$descricao}"
+                    );
+                } catch (Exception $auditError) {
+                    error_log("Audit log failed: " . $auditError->getMessage());
+                    // Continue mesmo se auditoria falhar
+                }
                 
                 $this->json(['success' => true, 'message' => 'Lançamento atualizado com sucesso!']);
             } else {
@@ -446,7 +581,7 @@ class TransactionController extends BaseController {
                 $this->auditModel->logUserAction(
                     $user['id'],
                     1,
-                    'transaction',
+                    'transactions',
                     'delete',
                     $transactionId,
                     $transaction,
@@ -494,7 +629,7 @@ class TransactionController extends BaseController {
             $user = AuthMiddleware::requireAuth();
             
             $tipo = $_GET['tipo'] ?? '';
-            $orgId = 1; // Por enquanto fixo
+            $orgId = $this->getCurrentOrgId(); // Por enquanto fixo
             
             if (empty($tipo)) {
                 $this->json(['success' => false, 'message' => 'Tipo é obrigatório']);
@@ -652,7 +787,7 @@ class TransactionController extends BaseController {
                 $this->auditModel->logUserAction(
                     $user['id'],
                     1,
-                    'transaction',
+                    'transactions',
                     'launch',
                     $transactionId,
                     $transaction,
@@ -693,11 +828,18 @@ class TransactionController extends BaseController {
                 return;
             }
             
-            // Data de confirmação (pagamento)
-            $paymentDate = $_POST['data_pagamento'] ?? date('Y-m-d');
+            // Data de confirmação (pagamento) - usar data de competência se não informada
+            $paymentDate = $_POST['data_pagamento'] ?? null;
+            if (empty($paymentDate)) {
+                // Se não tem data de pagamento, usar data de competência
+                $paymentDate = $transaction['data_competencia'] ?? date('Y-m-d');
+            }
             
             // Parâmetro opcional para ajustar valor
             $newValue = $_POST['valor'] ?? null;
+            
+            // Parâmetro opcional para alterar conta de pagamento
+            $newAccountId = $_POST['account_id'] ?? null;
             
             // Atualizar status para confirmado e definir data de pagamento
             $updateData = [
@@ -709,10 +851,22 @@ class TransactionController extends BaseController {
             if ($newValue && $newValue !== $transaction['valor']) {
                 // Converter valor formatado brasileiro para decimal
                 $valorNumerico = $this->convertBrazilianCurrencyToDecimal($newValue);
+                
                 if ($valorNumerico !== false) {
                     $updateData['valor'] = $valorNumerico;
+                } else {
+                    $this->json(['success' => false, 'message' => 'Valor inválido fornecido']);
+                    return;
                 }
             }
+            
+            // Se conta foi alterada, incluir no update
+            if ($newAccountId && $newAccountId !== $transaction['account_id']) {
+                $updateData['account_id'] = $newAccountId;
+                error_log("Conta alterada na confirmação: {$transaction['account_id']} -> {$newAccountId}");
+            }
+            
+            error_log("Dados para atualização na confirmação: " . json_encode($updateData));
             
             $success = $this->transactionModel->updateTransaction($transactionId, $updateData);
             
@@ -721,38 +875,263 @@ class TransactionController extends BaseController {
                 $this->auditModel->logUserAction(
                     $user['id'],
                     1,
-                    'transaction',
-                    'confirm',
+                    'transactions',
+                    'update',
+                    $transactionId,
                     $transaction,
                     $updateData,
                     "Lançamento confirmado: {$transaction['descricao']}"
                 );
-                
+
+                // Enviar notificação de confirmação
+                try {
+                    $orgId = $this->getCurrentOrgId();
+
+                    $transactionData = [
+                        'id' => $transactionId,
+                        'descricao' => $transaction['descricao'],
+                        'valor' => $updateData['valor'] ?? $transaction['valor'],
+                        'kind' => $transaction['kind'],
+                        'data_competencia' => $transaction['data_competencia'],
+                        'data_pagamento' => $paymentDate,
+                        'categoria' => $transaction['category_id'] ? $this->categoryModel->findById($transaction['category_id'])['nome'] ?? null : null,
+                        'conta' => $transaction['account_id'] ? $this->accountModel->findById($transaction['account_id'])['nome'] ?? null : null,
+                        'action' => 'confirmed'
+                    ];
+
+                    // Buscar dados completos da transação para notificação
+                    $transactionModel = new Transaction();
+                    $fullTransaction = $transactionModel->findById($transactionId);
+
+                    // Usar método padronizado para notificação de confirmação
+                    $this->teamNotificationService->notifyTransactionConfirmed($orgId, $fullTransaction);
+
+                    error_log("Confirmation notification sent for transaction ID: $transactionId");
+                } catch (Exception $notificationError) {
+                    error_log("Failed to send confirmation notification: " . $notificationError->getMessage());
+                }
+
+                error_log("Lançamento confirmado com sucesso - ID: {$transactionId}");
                 $this->json(['success' => true, 'message' => 'Lançamento confirmado com sucesso!']);
             } else {
+                error_log("Falha ao atualizar transação - ID: {$transactionId}");
                 $this->json(['success' => false, 'message' => 'Erro ao confirmar lançamento']);
             }
             
         } catch (Exception $e) {
-            error_log("Erro ao confirmar lançamento: " . $e->getMessage());
-            $this->json(['success' => false, 'message' => 'Erro interno do servidor']);
+            error_log("Erro ao confirmar lançamento: " . $e->getMessage() . " - Trace: " . $e->getTraceAsString());
+            $this->json(['success' => false, 'message' => 'Erro interno do servidor: ' . $e->getMessage()]);
         }
     }
     
     private function convertBrazilianCurrencyToDecimal($value) {
-        if (empty($value)) return false;
+        if (empty($value)) {
+            return false;
+        }
         
-        // Remove "R$ " e espaços
-        $cleaned = str_replace(['R$', ' '], '', $value);
+        // Remove all non-numeric characters except comma and period
+        $cleaned = preg_replace('/[^\d,.]/u', '', $value);
         
-        // Se tem vírgula, é formato brasileiro (ex: "1.234,56")
+        // Handle Brazilian format (1.234,56 or 1234,56)
         if (strpos($cleaned, ',') !== false) {
-            // Remove pontos (milhares) e substitui vírgula (decimal) por ponto
-            $cleaned = str_replace('.', '', $cleaned);
+            // If has both . and , then . is thousands separator
+            if (strpos($cleaned, '.') !== false && strpos($cleaned, ',') !== false) {
+                $cleaned = str_replace('.', '', $cleaned);
+            }
+            // Replace comma with period for decimal
             $cleaned = str_replace(',', '.', $cleaned);
         }
         
+        // Convert to float
         $numericValue = floatval($cleaned);
-        return $numericValue > 0 ? $numericValue : false;
+        
+        // Return the value if it's >= 0.01 (handles precision issues and rejects zero)
+        return $numericValue >= 0.01 ? $numericValue : false;
     }
+    
+    public function getScheduled() {
+        try {
+            $user = AuthMiddleware::requireAuth();
+            $orgId = $this->getCurrentOrgId();
+
+            $transactions = $this->transactionModel->getScheduledTransactions($orgId);
+
+            $this->json([
+                'success' => true,
+                'transactions' => $transactions
+            ]);
+
+        } catch (Exception $e) {
+            error_log("Erro ao buscar agendados: " . $e->getMessage());
+            $this->json(['success' => false, 'message' => 'Erro interno do servidor']);
+        }
+    }
+
+    public function partialPayment() {
+        header('Content-Type: application/json');
+
+        try {
+            // Requer autenticação
+            $user = AuthMiddleware::requireAuth();
+            $orgId = $this->getCurrentOrgId();
+
+            $input = json_decode(file_get_contents('php://input'), true);
+
+            if (!$input || !isset($input['transaction_id']) || !isset($input['valor_pago'])) {
+                echo json_encode(['success' => false, 'message' => 'Dados incompletos para baixa parcial']);
+                exit;
+            }
+
+            $transactionId = (int)$input['transaction_id'];
+            $valorPagoInput = (float)$input['valor_pago'];
+            $accountId = (int)$input['account_id'];
+
+            if (!$valorPagoInput || $valorPagoInput <= 0) {
+                echo json_encode(['success' => false, 'message' => 'Valor inválido para baixa parcial']);
+                exit;
+            }
+
+            if (!$accountId) {
+                echo json_encode(['success' => false, 'message' => 'Conta é obrigatória para baixa parcial']);
+                exit;
+            }
+
+            // Buscar transação
+            $transaction = $this->transactionModel->findById($transactionId);
+            if (!$transaction) {
+                echo json_encode(['success' => false, 'message' => 'Transação não encontrada']);
+                exit;
+            }
+
+            // Verificar se é agendada
+            if ($transaction['status'] !== 'agendado') {
+                echo json_encode(['success' => false, 'message' => 'Apenas transações agendadas podem ter baixa parcial']);
+                exit;
+            }
+
+            // Primeiro, habilitar baixa parcial na transação se ainda não estiver
+            if (!$transaction['permite_baixa_parcial']) {
+                require_once __DIR__ . '/../../config/database.php';
+                $database = new Database();
+                $pdo = $database->getConnection();
+
+                $stmt = $pdo->prepare("UPDATE transactions
+                                       SET permite_baixa_parcial = 1,
+                                           valor_original = COALESCE(valor_original, valor),
+                                           valor_pendente = COALESCE(valor_pendente, valor)
+                                       WHERE id = ?");
+                $stmt->execute([$transactionId]);
+
+                // Recarregar transação
+                $transaction = $this->transactionModel->findById($transactionId);
+            }
+
+            // Calcular saldo pendente
+            $valorOriginal = $transaction['valor_original'] ?? $transaction['valor'];
+            $valorJaPago = $transaction['valor_pago'] ?? 0;
+            $saldoPendente = $valorOriginal - $valorJaPago;
+
+            if ($saldoPendente <= 0) {
+                echo json_encode(['success' => false, 'message' => 'Esta transação já foi totalmente paga']);
+                exit;
+            }
+
+            if ($valorPagoInput > $saldoPendente) {
+                echo json_encode(['success' => false, 'message' => 'O valor da baixa não pode ser maior que o saldo pendente de R$ ' . number_format($saldoPendente, 2, ',', '.')]);
+                exit;
+            }
+
+            // Usar o novo sistema de baixas parciais
+            require_once __DIR__ . '/../models/PartialPayment.php';
+            $partialPaymentModel = new PartialPayment();
+
+            // Dados para registrar a baixa parcial
+            $paymentData = [
+                'org_id' => $orgId,
+                'transaction_id' => $transactionId,
+                'account_id' => $accountId, // Usar conta selecionada pelo usuário
+                'valor' => $valorPagoInput,
+                'data_pagamento' => date('Y-m-d'),
+                'descricao' => 'Baixa parcial por ' . $user['nome'] . ' (' . date('d/m/Y H:i') . ')',
+                'created_by' => $user['id']
+            ];
+
+            // Registrar baixa parcial (as triggers atualizarão os saldos automaticamente)
+            $paymentId = $partialPaymentModel->registerPayment($paymentData);
+
+            if ($paymentId) {
+                $novoSaldoPendente = $saldoPendente - $valorPagoInput;
+                $message = "Baixa parcial realizada com sucesso! Valor pago: R$ " . number_format($valorPagoInput, 2, ',', '.') .
+                          ". Saldo pendente: R$ " . number_format($novoSaldoPendente, 2, ',', '.');
+
+                error_log("Baixa parcial registrada: ID {$paymentId} para transação {$transactionId} - Valor: {$valorPagoInput}");
+
+                // Enviar notificação WhatsApp da baixa parcial
+                try {
+                    $orgId = $this->getCurrentOrgId();
+                    $transactionModel = new Transaction();
+                    $fullTransaction = $transactionModel->findById($transactionId);
+
+                    $this->teamNotificationService->notifyPartialPayment($orgId, $fullTransaction, $valorPagoInput, $novoSaldoPendente);
+                    error_log("Partial payment notification sent for transaction ID: $transactionId");
+                } catch (Exception $notificationError) {
+                    error_log("Failed to send partial payment notification: " . $notificationError->getMessage());
+                }
+
+                echo json_encode(['success' => true, 'message' => $message, 'payment_id' => $paymentId]);
+                exit;
+            } else {
+                echo json_encode(['success' => false, 'message' => 'Erro ao processar baixa parcial']);
+                exit;
+            }
+
+        } catch (Exception $e) {
+            error_log("Erro ao processar baixa parcial: " . $e->getMessage());
+            echo json_encode(['success' => false, 'message' => 'Erro interno do servidor: ' . $e->getMessage()]);
+            exit;
+        }
+    }
+
+    public function filter() {
+        $user = AuthMiddleware::requireAuth();
+        $orgId = $this->getCurrentOrgId();
+
+        try {
+            $startDate = $_GET['start_date'] ?? '';
+            $endDate = $_GET['end_date'] ?? '';
+            $accountId = $_GET['account_id'] ?? '';
+            $type = $_GET['type'] ?? '';
+
+            if (empty($startDate) || empty($endDate)) {
+                $this->jsonResponse([
+                    'success' => false,
+                    'message' => 'Datas inicial e final são obrigatórias'
+                ]);
+                return;
+            }
+
+            $filters = [
+                'date_from' => $startDate,
+                'date_to' => $endDate,
+                'account_id' => $accountId,
+                'kind' => $type,
+                'order_by' => 'data_competencia'
+            ];
+
+            $result = $this->transactionModel->getTransactionsWithFilters($orgId, $filters, 100, 0);
+            $transactions = $result['transactions'];
+
+            $this->jsonResponse([
+                'success' => true,
+                'transactions' => $transactions
+            ]);
+
+        } catch (Exception $e) {
+            $this->handleError($e, 'Erro ao filtrar transações');
+        }
+    }
+
+    // Método removido temporariamente - futuro: integração com WhatsApp
+    // private function sendNewTransactionNotifications(...) { ... }
+
 }

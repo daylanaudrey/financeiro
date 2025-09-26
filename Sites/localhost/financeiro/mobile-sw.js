@@ -1,9 +1,8 @@
-const CACHE_NAME = 'financeiro-mobile-v1.0.2';
+const CACHE_NAME = 'financeiro-mobile-v1.4.0';
 const OFFLINE_URL = './mobile';
 
-// Recursos essenciais para cache
+// Recursos essenciais para cache (SEM a página mobile para evitar cache de conteúdo dinâmico)
 const STATIC_CACHE_URLS = [
-  './mobile',
   './assets/css/style.css',
   'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css',
   'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css',
@@ -65,30 +64,31 @@ self.addEventListener('fetch', (event) => {
     return;
   }
   
-  // Para a página mobile, usar cache first
+  // Não fazer cache de páginas de autenticação
+  if (url.pathname.includes('/login') || url.pathname.includes('/logout') || url.pathname.includes('/auth/')) {
+    event.respondWith(fetch(request));
+    return;
+  }
+  
+  // Para a página mobile, usar network first (sempre buscar versão mais recente)
   if (url.pathname.endsWith('/mobile') || url.pathname === './mobile') {
     event.respondWith(
-      caches.match(request)
+      fetch(request)
         .then((response) => {
-          if (response) {
-            console.log('[SW] Serving from cache:', url.pathname);
+          if (response && response.status === 200) {
+            console.log('[SW] Serving fresh from network:', url.pathname);
             return response;
           }
-          
-          console.log('[SW] Fetching from network:', url.pathname);
-          return fetch(request)
-            .then((response) => {
-              if (response && response.status === 200) {
-                const responseClone = response.clone();
-                caches.open(CACHE_NAME)
-                  .then((cache) => {
-                    cache.put(request, responseClone);
-                  });
+          throw new Error('Network response not ok');
+        })
+        .catch(() => {
+          console.log('[SW] Network failed for mobile page, trying cache');
+          return caches.match(request)
+            .then((cachedResponse) => {
+              if (cachedResponse) {
+                console.log('[SW] Serving stale from cache:', url.pathname);
+                return cachedResponse;
               }
-              return response;
-            })
-            .catch(() => {
-              console.log('[SW] Network failed, serving offline page');
               return caches.match(OFFLINE_URL);
             });
         })
@@ -238,12 +238,22 @@ self.addEventListener('push', (event) => {
 // Notification click
 self.addEventListener('notificationclick', (event) => {
   console.log('[SW] Notification click received');
-  
+
   event.notification.close();
-  
+
   if (event.action === 'explore') {
     event.waitUntil(
       clients.openWindow('./mobile')
     );
+  }
+});
+
+// Escutar mensagens do cliente para skipWaiting
+self.addEventListener('message', (event) => {
+  console.log('[SW] Message received:', event.data);
+
+  if (event.data && event.data.action === 'skipWaiting') {
+    console.log('[SW] Skipping waiting...');
+    self.skipWaiting();
   }
 });

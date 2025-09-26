@@ -8,8 +8,6 @@ class Vault extends BaseModel {
         $sql = "
             SELECT 
                 vg.*,
-                a.nome as account_name,
-                a.saldo_atual as account_balance,
                 ROUND((vg.valor_atual / vg.valor_meta) * 100, 2) as progresso_percentual,
                 CASE 
                     WHEN vg.data_meta IS NOT NULL THEN DATEDIFF(vg.data_meta, CURDATE())
@@ -22,10 +20,8 @@ class Vault extends BaseModel {
                     ELSE 'em_andamento'
                 END as status_meta
             FROM vault_goals vg
-            INNER JOIN accounts a ON vg.account_id = a.id
             WHERE vg.deleted_at IS NULL 
-            AND a.deleted_at IS NULL
-            " . ($orgId ? "AND a.org_id = ?" : "") . "
+            " . ($orgId ? "AND vg.org_id = ?" : "") . "
             AND vg.ativo = TRUE
             ORDER BY 
                 vg.concluido ASC,
@@ -44,11 +40,8 @@ class Vault extends BaseModel {
         $sql = "
             SELECT 
                 vg.*,
-                a.nome as account_name,
-                a.saldo_atual as account_balance,
                 ROUND((vg.valor_atual / vg.valor_meta) * 100, 2) as progresso_percentual
             FROM vault_goals vg
-            INNER JOIN accounts a ON vg.account_id = a.id
             WHERE vg.id = ? AND vg.deleted_at IS NULL
         ";
         $stmt = $this->db->prepare($sql);
@@ -74,25 +67,16 @@ class Vault extends BaseModel {
     }
     
     public function createVaultGoal($data) {
-        $requiredFields = ['account_id', 'titulo', 'valor_meta'];
+        $requiredFields = ['titulo', 'valor_meta'];
         foreach ($requiredFields as $field) {
             if (!isset($data[$field]) || empty($data[$field])) {
                 throw new InvalidArgumentException("Campo obrigatório não informado: {$field}");
             }
         }
         
-        // Verificar se a conta é do tipo vault
-        $stmt = $this->db->prepare("SELECT tipo FROM accounts WHERE id = ? AND deleted_at IS NULL");
-        $stmt->execute([$data['account_id']]);
-        $account = $stmt->fetch();
-        
-        if (!$account || $account['tipo'] !== 'vault') {
-            throw new InvalidArgumentException("A conta selecionada deve ser do tipo 'vault'");
-        }
-        
         // Preparar dados para inserção
         $insertData = [
-            'account_id' => $data['account_id'],
+            'org_id' => $data['org_id'] ?? 1,
             'titulo' => $data['titulo'],
             'descricao' => $data['descricao'] ?? null,
             'valor_meta' => $this->convertBrazilianCurrencyToDecimal($data['valor_meta']),
@@ -184,10 +168,8 @@ class Vault extends BaseModel {
                 SUM(valor_atual) as valor_total_atual,
                 ROUND(AVG((valor_atual / valor_meta) * 100), 2) as progresso_medio
             FROM vault_goals vg
-            INNER JOIN accounts a ON vg.account_id = a.id
             WHERE vg.deleted_at IS NULL 
-            AND a.deleted_at IS NULL
-            " . ($orgId ? "AND a.org_id = ?" : "") . "
+            " . ($orgId ? "AND vg.org_id = ?" : "") . "
             AND vg.ativo = TRUE
         ";
         
@@ -206,10 +188,8 @@ class Vault extends BaseModel {
                 SUM(vg.valor_atual) as valor_total_atual,
                 ROUND(AVG((vg.valor_atual / vg.valor_meta) * 100), 2) as progresso_medio
             FROM vault_goals vg
-            INNER JOIN accounts a ON vg.account_id = a.id
             WHERE vg.deleted_at IS NULL 
-            AND a.deleted_at IS NULL
-            " . ($orgId ? "AND a.org_id = ?" : "") . "
+            " . ($orgId ? "AND vg.org_id = ?" : "") . "
             AND vg.ativo = TRUE
             GROUP BY vg.categoria
             ORDER BY valor_total_meta DESC

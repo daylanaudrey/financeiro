@@ -15,8 +15,7 @@ class ContactController extends BaseController {
     public function index() {
         $user = AuthMiddleware::requireAuth();
         
-        // Por enquanto, usar org_id = 1
-        $orgId = 1;
+        $orgId = $this->getCurrentOrgId();
         
         $contacts = $this->contactModel->getContactsByOrg($orgId);
         $typeOptions = $this->contactModel->getTypeOptions();
@@ -63,7 +62,7 @@ class ContactController extends BaseController {
             }
             
             $contactData = [
-                'org_id' => 1, // Por enquanto fixo
+                'org_id' => $this->getCurrentOrgId(),
                 'nome' => $nome,
                 'tipo' => $tipo,
                 'documento' => $documento,

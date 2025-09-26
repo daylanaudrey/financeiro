@@ -15,8 +15,7 @@ class AccountController extends BaseController {
     public function index() {
         $user = AuthMiddleware::requireAuth();
         
-        // Por enquanto, usar org_id = 1 (depois implementar multi-org)
-        $orgId = 1;
+        $orgId = $this->getCurrentOrgId();
         
         $accounts = $this->accountModel->getAccountsByOrg($orgId);
         $totalBalance = $this->accountModel->getTotalBalance($orgId);
@@ -89,7 +88,7 @@ class AccountController extends BaseController {
             
             // Dados da conta
             $accountData = [
-                'org_id' => 1, // Por enquanto fixo
+                'org_id' => $this->getCurrentOrgId(),
                 'pessoa_tipo' => $pessoaTipo,
                 'nome' => $nome,
                 'razao_social' => $razaoSocial ?: null,
