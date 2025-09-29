@@ -8,10 +8,60 @@
                         <i class="bi bi-box-seam"></i>
                         <?= $action === 'create' ? 'Adicionar Item' : 'Editar Item' ?>
                     </h1>
-                    <p class="text-muted">
+                    <p class="text-muted mb-2">
                         Processo: <strong><?= htmlspecialchars($process['code'] ?? '') ?></strong> -
                         Cliente: <strong><?= htmlspecialchars($process['client_name'] ?? '') ?></strong>
                     </p>
+                    <div class="row g-2 text-sm">
+                        <div class="col-md-2">
+                            <strong>BL:</strong> <?= htmlspecialchars($process['bl_number'] ?? 'N/A') ?>
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Container:</strong> <?= htmlspecialchars($process['container_number'] ?? 'N/A') ?>
+                        </div>
+                        <div class="col-md-2">
+                            <strong>Data Confirmada:</strong>
+                            <?= !empty($process['confirmed_arrival_date']) ? date('d/m/Y', strtotime($process['confirmed_arrival_date'])) : 'N/A' ?>
+                        </div>
+                        <div class="col-md-2">
+                            <strong>Porto:</strong> <?= htmlspecialchars($process['destination_port_name'] ?? 'N/A') ?>
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Free Time:</strong>
+                            <?php
+                            if (!empty($process['confirmed_arrival_date']) && isset($process['free_time_days'])) {
+                                $arrivalDate = new DateTime($process['confirmed_arrival_date']);
+                                $freeTimeEnd = clone $arrivalDate;
+                                $freeTimeEnd->add(new DateInterval('P' . $process['free_time_days'] . 'D'));
+                                $today = new DateTime();
+                                $daysLeft = $today->diff($freeTimeEnd)->days * ($today < $freeTimeEnd ? 1 : -1);
+
+                                if ($daysLeft > 5) {
+                                    $statusClass = 'text-success';
+                                    $statusIcon = 'bi-check-circle';
+                                } elseif ($daysLeft >= 2) {
+                                    $statusClass = 'text-warning';
+                                    $statusIcon = 'bi-exclamation-triangle';
+                                } else {
+                                    $statusClass = 'text-danger';
+                                    $statusIcon = 'bi-exclamation-circle';
+                                }
+
+                                echo '<span class="' . $statusClass . '"><i class="bi ' . $statusIcon . '"></i> ';
+                                if ($daysLeft > 0) {
+                                    echo $daysLeft . ' dias restantes';
+                                } elseif ($daysLeft == 0) {
+                                    echo 'Vence hoje';
+                                } else {
+                                    echo 'Vencido há ' . abs($daysLeft) . ' dias';
+                                }
+                                echo '</span>';
+                            } else {
+                                echo '<span class="text-muted">N/A</span>';
+                            }
+                            ?>
+                        </div>
+                    </div>
                 </div>
                 <div>
                     <a href="<?= BASE_URL ?>process-items?process_id=<?= $process['id'] ?>" class="btn btn-outline-secondary">

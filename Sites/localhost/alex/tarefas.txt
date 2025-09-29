@@ -1,7 +1,7 @@
 ler as regras CLAUDE.md use MCP para testar.
 
-quando vai criar um produto, paarecer o erro em RFB Padrão (Todos os Portos)
-Users/daylan/Sites/localhost/alex/app/Views/products/form.php on line
-209
+quando clica em gerenciar itens, não está salvando as alterações.
 
-" placeholder="0,00">
+nos itens do processo, no card informações do processo, não aparece o numero do container, porto, free time
+
+free time, colocar na listagem de processos também.  Free time, verde, faltando 5 dias para vencer fica amarelo, faltando 2 dias em diante, fica vermelho

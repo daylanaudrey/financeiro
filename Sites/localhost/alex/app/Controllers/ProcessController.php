@@ -242,6 +242,9 @@ class ProcessController
         $process_date = $_POST['process_date'] ?? '';
         $arrival_date = $_POST['arrival_date'] ?? '';
         $clearance_date = $_POST['clearance_date'] ?? '';
+        $estimated_arrival_date = $_POST['estimated_arrival_date'] ?? '';
+        $confirmed_arrival_date = $_POST['confirmed_arrival_date'] ?? '';
+        $free_time_days = (int)($_POST['free_time_days'] ?? 7);
         $modal = $_POST['modal'] ?? '';
         $container_number = trim($_POST['container_number'] ?? '');
         $bl_number = trim($_POST['bl_number'] ?? '');
@@ -315,11 +318,8 @@ class ProcessController
         }
 
         // Validar datas
-        if (!empty($arrival_date) && !empty($process_date)) {
-            if (strtotime($arrival_date) < strtotime($process_date)) {
-                $errors[] = 'Data de chegada não pode ser anterior à data do processo.';
-            }
-        }
+        // Removida validação que impedia data de chegada anterior ao processo
+        // pois em importações é comum a mercadoria chegar antes do processo ser registrado
 
         if (!empty($clearance_date) && !empty($arrival_date)) {
             if (strtotime($clearance_date) < strtotime($arrival_date)) {
@@ -344,6 +344,9 @@ class ProcessController
             'process_date' => $process_date,
             'arrival_date' => $arrival_date ?: null,
             'clearance_date' => $clearance_date ?: null,
+            'estimated_arrival_date' => $estimated_arrival_date ?: null,
+            'confirmed_arrival_date' => $confirmed_arrival_date ?: null,
+            'free_time_days' => $free_time_days,
             'modal' => $modal,
             'destination_port_id' => $destination_port_id,
             'container_number' => $container_number ?: null,

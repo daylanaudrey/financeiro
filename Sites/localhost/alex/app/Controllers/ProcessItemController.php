@@ -21,7 +21,7 @@ class ProcessItemController
             exit;
         }
 
-        $process = Process::findById($processId);
+        $process = Process::findByIdWithPort($processId);
         if (!$process) {
             $_SESSION['error'] = 'Processo não encontrado.';
             header('Location: ' . BASE_URL . 'processes');
@@ -30,6 +30,11 @@ class ProcessItemController
 
         $items = ProcessItem::getByProcessId($processId);
         $totals = ProcessItem::getTotalsByProcessId($processId);
+
+        // Auto-save: atualizar totais do processo
+        if (isset($_GET['auto_save']) && $_GET['auto_save'] == '1') {
+            Process::updateTotals($processId, $totals);
+        }
 
         $data = [
             'title' => 'Itens do Processo',
@@ -57,7 +62,7 @@ class ProcessItemController
             exit;
         }
 
-        $process = Process::findById($processId);
+        $process = Process::findByIdWithPort($processId);
         if (!$process) {
             $_SESSION['error'] = 'Processo não encontrado.';
             header('Location: ' . BASE_URL . 'processes');

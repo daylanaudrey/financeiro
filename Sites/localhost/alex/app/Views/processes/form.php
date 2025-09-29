@@ -115,6 +115,31 @@
                 </div>
 
                 <div class="row g-3 mt-3">
+                    <!-- Nova linha: Datas de Chegada e Free Time -->
+                    <div class="col-md-4">
+                        <label for="estimated_arrival_date" class="form-label">Data Chegada Prevista</label>
+                        <input type="date" class="form-control" id="estimated_arrival_date" name="estimated_arrival_date"
+                               value="<?= $process['estimated_arrival_date'] ?? '' ?>">
+                        <small class="form-text text-muted">Previsão inicial de chegada</small>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label for="confirmed_arrival_date" class="form-label">Data Chegada Confirmada</label>
+                        <input type="date" class="form-control" id="confirmed_arrival_date" name="confirmed_arrival_date"
+                               value="<?= $process['confirmed_arrival_date'] ?? '' ?>">
+                        <small class="form-text text-muted">Data confirmada de chegada</small>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label for="free_time_days" class="form-label">Free Time (dias)</label>
+                        <input type="number" class="form-control" id="free_time_days" name="free_time_days"
+                               value="<?= $process['free_time_days'] ?? 7 ?>"
+                               min="1" max="30">
+                        <small class="form-text text-muted">Dias de armazenagem sem custo</small>
+                    </div>
+                </div>
+
+                <div class="row g-3 mt-3">
                     <!-- Terceira linha: Transporte -->
                     <div class="col-md-3">
                         <label for="modal" class="form-label">Modal de Transporte <span class="text-danger">*</span></label>
@@ -424,16 +449,7 @@ window.pendingScripts.push(function() {
     $('#status').on('change', updatePtaxButtonState);
     updatePtaxButtonState(); // Executar na inicialização
 
-    // Validação de datas
-    $('#arrival_date').on('change', function() {
-        const processDate = $('#process_date').val();
-        const arrivalDate = $(this).val();
-
-        if (processDate && arrivalDate && arrivalDate < processDate) {
-            showError('Data de chegada não pode ser anterior à data do processo');
-            $(this).val('');
-        }
-    });
+    // Validação de datas - removida validação que impedia data de chegada anterior ao processo
 
     $('#clearance_date').on('change', function() {
         const arrivalDate = $('#arrival_date').val();

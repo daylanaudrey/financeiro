@@ -121,10 +121,10 @@ class Process
     public static function create(array $data): int
     {
         $sql = "INSERT INTO " . static::$table . "
-                (code, client_id, type, status, process_date, arrival_date, clearance_date,
+                (code, client_id, type, status, process_date, arrival_date, clearance_date, estimated_arrival_date, confirmed_arrival_date, free_time_days,
                  modal, destination_port_id, container_number, bl_number, incoterm, total_fob_usd, total_freight_usd,
                  total_insurance_usd, total_cif_usd, exchange_rate, total_cif_brl, notes, created_by)
-                VALUES (:code, :client_id, :type, :status, :process_date, :arrival_date, :clearance_date,
+                VALUES (:code, :client_id, :type, :status, :process_date, :arrival_date, :clearance_date, :estimated_arrival_date, :confirmed_arrival_date, :free_time_days,
                         :modal, :destination_port_id, :container_number, :bl_number, :incoterm, :total_fob_usd, :total_freight_usd,
                         :total_insurance_usd, :total_cif_usd, :exchange_rate, :total_cif_brl, :notes, :created_by)";
 
@@ -138,6 +138,9 @@ class Process
             'process_date' => $data['process_date'],
             'arrival_date' => $data['arrival_date'] ?? null,
             'clearance_date' => $data['clearance_date'] ?? null,
+            'estimated_arrival_date' => $data['estimated_arrival_date'] ?? null,
+            'confirmed_arrival_date' => $data['confirmed_arrival_date'] ?? null,
+            'free_time_days' => $data['free_time_days'] ?? 7,
             'modal' => $data['modal'],
             'destination_port_id' => $data['destination_port_id'] ?? null,
             'container_number' => $data['container_number'] ?? null,
@@ -164,6 +167,7 @@ class Process
         $sql = "UPDATE " . static::$table . "
                 SET code = :code, client_id = :client_id, type = :type, status = :status,
                     process_date = :process_date, arrival_date = :arrival_date, clearance_date = :clearance_date,
+                    estimated_arrival_date = :estimated_arrival_date, confirmed_arrival_date = :confirmed_arrival_date, free_time_days = :free_time_days,
                     modal = :modal, destination_port_id = :destination_port_id, container_number = :container_number, bl_number = :bl_number,
                     incoterm = :incoterm, total_fob_usd = :total_fob_usd, total_freight_usd = :total_freight_usd,
                     total_insurance_usd = :total_insurance_usd, total_cif_usd = :total_cif_usd,
@@ -182,6 +186,9 @@ class Process
             'process_date' => $data['process_date'],
             'arrival_date' => $data['arrival_date'] ?? null,
             'clearance_date' => $data['clearance_date'] ?? null,
+            'estimated_arrival_date' => $data['estimated_arrival_date'] ?? null,
+            'confirmed_arrival_date' => $data['confirmed_arrival_date'] ?? null,
+            'free_time_days' => $data['free_time_days'] ?? 7,
             'modal' => $data['modal'],
             'destination_port_id' => $data['destination_port_id'] ?? null,
             'container_number' => $data['container_number'] ?? null,
@@ -241,9 +248,10 @@ class Process
      */
     public static function search(array $filters = []): array
     {
-        $sql = "SELECT p.*, c.name as client_name, c.type as client_type
+        $sql = "SELECT p.*, c.name as client_name, c.type as client_type, po.name as destination_port_name
                 FROM " . static::$table . " p
                 LEFT JOIN clients c ON p.client_id = c.id
+                LEFT JOIN ports po ON p.destination_port_id = po.id
                 WHERE p.deleted = 0";
         $params = [];
 
@@ -338,5 +346,50 @@ class Process
 
         $nextNumber = ($result['last_number'] ?? 0) + 1;
         return 'IMP' . str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
+    }
+
+    /**
+     * Atualizar totais do processo baseado nos itens
+     */
+    public static function updateTotals(int $processId, array $totals): bool
+    {
+        $sql = "UPDATE " . static::$table . "
+                SET total_fob_usd = :total_fob_usd,
+                    total_freight_usd = :total_freight_usd,
+                    total_insurance_usd = :total_insurance_usd,
+                    total_cif_usd = :total_cif_usd,
+                    total_cif_brl = :total_cif_brl,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE id = :id";
+
+        $pdo = Database::getConnection();
+        $stmt = $pdo->prepare($sql);
+
+        return $stmt->execute([
+            'total_fob_usd' => $totals['total_fob_usd'] ?? 0,
+            'total_freight_usd' => $totals['total_freight_usd'] ?? 0,
+            'total_insurance_usd' => $totals['total_insurance_usd'] ?? 0,
+            'total_cif_usd' => $totals['cif_usd'] ?? 0,
+            'total_cif_brl' => $totals['cif_brl'] ?? 0,
+            'id' => $processId
+        ]);
+    }
+
+    /**
+     * Buscar processo por ID com informações de porto e cliente
+     */
+    public static function findByIdWithPort(int $id): ?array
+    {
+        $sql = "SELECT p.*, c.name as client_name, c.type as client_type, po.name as destination_port_name
+                FROM " . static::$table . " p
+                LEFT JOIN clients c ON p.client_id = c.id
+                LEFT JOIN ports po ON p.destination_port_id = po.id
+                WHERE p.id = :id AND p.deleted = 0";
+
+        $pdo = Database::getConnection();
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute(['id' => $id]);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $result ?: null;
     }
 }

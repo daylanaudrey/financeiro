@@ -174,12 +174,17 @@
                             <?php foreach ($processes as $process): ?>
                                 <tr>
                                     <td>
-                                        <strong><?= htmlspecialchars($process['code']) ?></strong>
+                                        <a href="<?= BASE_URL ?>processes/edit?id=<?= $process['id'] ?>" class="text-decoration-none">
+                                            <strong><?= htmlspecialchars($process['code']) ?></strong>
+                                        </a>
                                         <?php if (!empty($process['bl_number'])): ?>
                                             <br><small class="text-muted">BL: <?= htmlspecialchars($process['bl_number']) ?></small>
                                         <?php endif; ?>
                                         <?php if (!empty($process['container_number'])): ?>
                                             <br><small class="text-primary">Container: <?= htmlspecialchars($process['container_number']) ?></small>
+                                        <?php endif; ?>
+                                        <?php if (!empty($process['destination_port_name'])): ?>
+                                            <br><small class="text-info">Porto: <?= htmlspecialchars($process['destination_port_name']) ?></small>
                                         <?php endif; ?>
                                     </td>
                                     <td>
@@ -217,6 +222,39 @@
                                         <?php if (!empty($process['clearance_date'])): ?>
                                             <br><small class="text-success">Desembaraço: <?= date('d/m/Y', strtotime($process['clearance_date'])) ?></small>
                                         <?php endif; ?>
+
+                                        <!-- Free Time Status -->
+                                        <?php if (!empty($process['confirmed_arrival_date']) && isset($process['free_time_days'])): ?>
+                                            <?php
+                                            $arrivalDate = new DateTime($process['confirmed_arrival_date']);
+                                            $freeTimeEnd = clone $arrivalDate;
+                                            $freeTimeEnd->add(new DateInterval('P' . $process['free_time_days'] . 'D'));
+                                            $today = new DateTime();
+                                            $daysLeft = $today->diff($freeTimeEnd)->days * ($today < $freeTimeEnd ? 1 : -1);
+
+                                            if ($daysLeft > 5) {
+                                                $statusClass = 'text-success';
+                                                $statusIcon = 'bi-check-circle-fill';
+                                            } elseif ($daysLeft >= 2) {
+                                                $statusClass = 'text-warning';
+                                                $statusIcon = 'bi-exclamation-triangle-fill';
+                                            } else {
+                                                $statusClass = 'text-danger';
+                                                $statusIcon = 'bi-exclamation-circle-fill';
+                                            }
+                                            ?>
+                                            <br><small class="<?= $statusClass ?>">
+                                                <i class="bi <?= $statusIcon ?>"></i>
+                                                Free Time:
+                                                <?php if ($daysLeft > 0): ?>
+                                                    <?= $daysLeft ?> dias restantes
+                                                <?php elseif ($daysLeft == 0): ?>
+                                                    Vence hoje
+                                                <?php else: ?>
+                                                    Vencido há <?= abs($daysLeft) ?> dias
+                                                <?php endif; ?>
+                                            </small>
+                                        <?php endif; ?>
                                     </td>
                                     <td>
                                         <strong>USD <?= number_format($process['total_cif_usd'], 2) ?></strong>
@@ -228,7 +266,7 @@
                                     <td>
                                         <div class="btn-group" role="group">
                                             <?php if (Permission::check('process_items.view')): ?>
-                                                <a href="<?= BASE_URL ?>process-items?process_id=<?= $process['id'] ?>"
+                                                <a href="<?= BASE_URL ?>process-items?process_id=<?= $process['id'] ?>&auto_save=1"
                                                    class="btn btn-sm btn-outline-info" title="Gerenciar Itens">
                                                     <i class="bi bi-box-seam"></i>
                                                 </a>
