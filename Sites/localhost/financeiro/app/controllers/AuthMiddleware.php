@@ -17,11 +17,13 @@ class AuthMiddleware {
             }
             
             // Configurar sessão para ser mais permissiva
-            ini_set('session.cookie_lifetime', 3600);
-            ini_set('session.gc_maxlifetime', 3600);
+            ini_set('session.cookie_lifetime', 3600); // 1 hora
+            ini_set('session.gc_maxlifetime', 7200); // 2 horas para coleta de lixo
             ini_set('session.use_strict_mode', 1);
             ini_set('session.cookie_httponly', 1);
             ini_set('session.cookie_secure', 0); // Permitir HTTP para desenvolvimento
+            ini_set('session.gc_probability', 1); // Aumentar probabilidade de limpeza
+            ini_set('session.gc_divisor', 100);
             
             try {
                 session_start();
@@ -69,6 +71,11 @@ class AuthMiddleware {
             // Capturar a URL atual para redirecionamento pós-login
             $currentUrl = $_SERVER['REQUEST_URI'];
 
+            // Detectar se é acesso mobile/PWA
+            $isMobileRequest = ($currentUrl === '/mobile' ||
+                              str_contains($currentUrl, '/mobile') ||
+                              self::isMobileUserAgent());
+
             // Evitar loops infinitos - não salvar URLs de auth
             if (!in_array($currentUrl, ['/login', '/register', '/logout']) &&
                 !str_contains($currentUrl, '/login') &&
@@ -76,15 +83,19 @@ class AuthMiddleware {
                 !str_contains($currentUrl, '/auth/')) {
 
                 // Para mobile, salvar flag especial em vez da URL completa
-                if ($currentUrl === '/mobile') {
+                if ($isMobileRequest) {
                     $_SESSION['return_to_mobile'] = 'true';
                 } else {
                     $_SESSION['redirect_after_login'] = $currentUrl;
                 }
-                // Saved redirect URL/flag
             }
 
-            header('Location: ' . url('/login'));
+            // Redirecionar para login com parâmetro mobile se necessário
+            if ($isMobileRequest) {
+                header('Location: ' . url('/login?mobile=1'));
+            } else {
+                header('Location: ' . url('/login'));
+            }
             exit;
         }
         
@@ -119,7 +130,27 @@ class AuthMiddleware {
         
         return $userRoleIndex !== false && $requiredRoleIndex !== false && $userRoleIndex >= $requiredRoleIndex;
     }
-    
+
+    private static function isMobileUserAgent() {
+        if (!isset($_SERVER['HTTP_USER_AGENT'])) {
+            return false;
+        }
+
+        $userAgent = $_SERVER['HTTP_USER_AGENT'];
+        $mobileKeywords = [
+            'Mobile', 'Android', 'iPhone', 'iPad', 'iPod',
+            'Windows Phone', 'BlackBerry', 'webOS'
+        ];
+
+        foreach ($mobileKeywords as $keyword) {
+            if (stripos($userAgent, $keyword) !== false) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public static function requireRole($requiredRole) {
         $user = self::requireAuth();
         
