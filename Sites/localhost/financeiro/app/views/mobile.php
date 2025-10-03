@@ -167,7 +167,7 @@
         .quick-actions {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 15px;
+            gap: 12px;
             margin-bottom: 25px;
         }
         
@@ -527,6 +527,18 @@
             font-weight: 600;
             white-space: nowrap;
         }
+        .mini-transaction-actions {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin-left: 10px;
+        }
+        .btn-mini {
+            padding: 2px 6px;
+            font-size: 0.7rem;
+            line-height: 1;
+            border-radius: 3px;
+        }
 
         .due-date-total {
             margin-top: 10px;
@@ -631,8 +643,26 @@
                     <div class="btn-subtitle">Adicionar saída</div>
                 </div>
             </button>
+            <button class="action-btn" style="background: linear-gradient(135deg, #6c757d 0%, #495057 100%);" data-bs-toggle="modal" data-bs-target="#allTransactionsModal">
+                <div class="btn-icon">
+                    <i class="fas fa-list"></i>
+                </div>
+                <div class="btn-text">
+                    <div class="btn-title">Lançamentos</div>
+                    <div class="btn-subtitle">Ver todos</div>
+                </div>
+            </button>
+            <button class="action-btn" style="background: linear-gradient(135deg, #17a2b8 0%, #117a8b 100%);" data-bs-toggle="modal" data-bs-target="#transferModal">
+                <div class="btn-icon">
+                    <i class="fas fa-exchange-alt"></i>
+                </div>
+                <div class="btn-text">
+                    <div class="btn-title">Transferência</div>
+                    <div class="btn-subtitle">Entre contas</div>
+                </div>
+            </button>
         </div>
-        
+
         <!-- FAB for Quick Add -->
         <div class="fab-container">
             <button class="fab main-fab" onclick="toggleFabMenu()">
@@ -691,10 +721,15 @@
                 <div class="transactions-list">
                     <?php foreach (array_slice($transactionsDueYesterday, 0, 3) as $transaction): ?>
                     <div class="mini-transaction">
-                        <span class="desc"><?= htmlspecialchars(substr($transaction['descricao'], 0, 30)) ?></span>
+                        <span class="desc"><?= htmlspecialchars(substr($transaction['descricao'], 0, 25)) ?></span>
                         <span class="value <?= $transaction['kind'] === 'entrada' ? 'text-success' : 'text-danger' ?>">
                             R$ <?= number_format($transaction['valor_pendente'], 2, ',', '.') ?>
                         </span>
+                        <div class="mini-transaction-actions">
+                            <button class="btn btn-success btn-mini" onclick="payTransaction(<?= $transaction['id'] ?>, '<?= addslashes($transaction['descricao']) ?>')" title="Dar baixa">
+                                <i class="fas fa-check"></i>
+                            </button>
+                        </div>
                     </div>
                     <?php endforeach; ?>
                     <?php if (count($transactionsDueYesterday) > 3): ?>
@@ -726,10 +761,15 @@
                 <div class="transactions-list">
                     <?php foreach (array_slice($transactionsDueToday, 0, 3) as $transaction): ?>
                     <div class="mini-transaction">
-                        <span class="desc"><?= htmlspecialchars(substr($transaction['descricao'], 0, 30)) ?></span>
+                        <span class="desc"><?= htmlspecialchars(substr($transaction['descricao'], 0, 25)) ?></span>
                         <span class="value <?= $transaction['kind'] === 'entrada' ? 'text-success' : 'text-danger' ?>">
                             R$ <?= number_format($transaction['valor_pendente'], 2, ',', '.') ?>
                         </span>
+                        <div class="mini-transaction-actions">
+                            <button class="btn btn-success btn-mini" onclick="payTransaction(<?= $transaction['id'] ?>, '<?= addslashes($transaction['descricao']) ?>')" title="Dar baixa">
+                                <i class="fas fa-check"></i>
+                            </button>
+                        </div>
                     </div>
                     <?php endforeach; ?>
                     <?php if (count($transactionsDueToday) > 3): ?>
@@ -761,10 +801,15 @@
                 <div class="transactions-list">
                     <?php foreach (array_slice($transactionsDueTomorrow, 0, 3) as $transaction): ?>
                     <div class="mini-transaction">
-                        <span class="desc"><?= htmlspecialchars(substr($transaction['descricao'], 0, 30)) ?></span>
+                        <span class="desc"><?= htmlspecialchars(substr($transaction['descricao'], 0, 25)) ?></span>
                         <span class="value <?= $transaction['kind'] === 'entrada' ? 'text-success' : 'text-danger' ?>">
                             R$ <?= number_format($transaction['valor_pendente'], 2, ',', '.') ?>
                         </span>
+                        <div class="mini-transaction-actions">
+                            <button class="btn btn-success btn-mini" onclick="payTransaction(<?= $transaction['id'] ?>, '<?= addslashes($transaction['descricao']) ?>')" title="Dar baixa">
+                                <i class="fas fa-check"></i>
+                            </button>
+                        </div>
                     </div>
                     <?php endforeach; ?>
                     <?php if (count($transactionsDueTomorrow) > 3): ?>
@@ -912,7 +957,8 @@
                 <div class="modal-body">
                     <form id="incomeForm">
                         <div class="form-floating mb-3">
-                            <input type="text" class="form-control" id="incomeDescricao" name="descricao" required>
+                            <input type="text" class="form-control" id="incomeDescricao" name="descricao" required list="incomeDescriptionsList" autocomplete="off">
+                            <datalist id="incomeDescriptionsList"></datalist>
                             <label for="incomeDescricao">Descrição *</label>
                         </div>
                         
@@ -985,7 +1031,8 @@
                 <div class="modal-body">
                     <form id="expenseForm">
                         <div class="form-floating mb-3">
-                            <input type="text" class="form-control" id="expenseDescricao" name="descricao" required>
+                            <input type="text" class="form-control" id="expenseDescricao" name="descricao" required list="expenseDescriptionsList" autocomplete="off">
+                            <datalist id="expenseDescriptionsList"></datalist>
                             <label for="expenseDescricao">Descrição *</label>
                         </div>
                         
@@ -1046,12 +1093,175 @@
             </div>
         </div>
     </div>
-    
-    
+
+    <!-- Modal Todos os Lançamentos -->
+    <div class="modal fade" id="allTransactionsModal" tabindex="-1">
+        <div class="modal-dialog modal-fullscreen">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-list me-2"></i>Todos os Lançamentos
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-0">
+                    <!-- Filtros -->
+                    <div class="p-3 bg-light border-bottom">
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <select class="form-select form-select-sm" id="filterStatus" onchange="filterTransactions()">
+                                    <option value="">Todos os status</option>
+                                    <option value="agendado">Agendado</option>
+                                    <option value="confirmado">Confirmado</option>
+                                    <option value="cancelado">Cancelado</option>
+                                </select>
+                            </div>
+                            <div class="col-6">
+                                <select class="form-select form-select-sm" id="filterKind" onchange="filterTransactions()">
+                                    <option value="">Receitas e Despesas</option>
+                                    <option value="entrada">Receitas</option>
+                                    <option value="saida">Despesas</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="mt-2">
+                            <input type="search" class="form-control form-control-sm" id="searchTransaction" placeholder="Buscar por descrição..." oninput="filterTransactions()">
+                        </div>
+                    </div>
+
+                    <!-- Lista de Transações -->
+                    <div id="allTransactionsList" class="p-2">
+                        <div class="text-center p-4">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Carregando...</span>
+                            </div>
+                            <p class="mt-2 text-muted">Carregando lançamentos...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Confirmar Lançamento -->
+    <div class="modal fade" id="confirmTransactionModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirmar Lançamento</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <p><strong>Descrição:</strong> <span id="confirmTransDesc"></span></p>
+                        <p><strong>Valor Original:</strong> <span id="confirmTransOriginal"></span></p>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="confirmTransAccount" class="form-label">Conta *</label>
+                        <select id="confirmTransAccount" class="form-select" required></select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="confirmTransValue" class="form-label">Valor Final *</label>
+                        <input type="text" id="confirmTransValue" class="form-control" required>
+                        <small class="text-muted">Ajuste se houver juros, multas ou descontos</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="confirmTransDate" class="form-label">Data de Confirmação *</label>
+                        <input type="date" id="confirmTransDate" class="form-control" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-success" onclick="submitConfirmTransaction()">
+                        <i class="fas fa-check me-1"></i>Confirmar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Transferência -->
+    <div class="modal fade" id="transferModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-exchange-alt me-2"></i>Transferência Entre Contas
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="transferForm">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="transferFromAccount" class="form-label">Conta de Origem *</label>
+                            <select class="form-select" id="transferFromAccount" required>
+                                <option value="">Selecione a conta de origem</option>
+                                <?php foreach ($accounts as $account): ?>
+                                    <option value="<?= $account['id'] ?>">
+                                        <?= htmlspecialchars($account['nome']) ?> - R$ <?= number_format($account['saldo_atual'], 2, ',', '.') ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="transferToAccount" class="form-label">Conta de Destino *</label>
+                            <select class="form-select" id="transferToAccount" required>
+                                <option value="">Selecione a conta de destino</option>
+                                <?php foreach ($accounts as $account): ?>
+                                    <option value="<?= $account['id'] ?>">
+                                        <?= htmlspecialchars($account['nome']) ?> - R$ <?= number_format($account['saldo_atual'], 2, ',', '.') ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="transferValue" class="form-label">Valor *</label>
+                            <input type="text" class="form-control" id="transferValue" placeholder="R$ 0,00" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="transferDate" class="form-label">Data *</label>
+                            <input type="date" class="form-control" id="transferDate" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="transferDescription" class="form-label">Descrição</label>
+                            <input type="text" class="form-control" id="transferDescription" list="transferDescriptionsList" placeholder="Descrição da transferência" autocomplete="off">
+                            <datalist id="transferDescriptionsList"></datalist>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-check me-2"></i>Transferir
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.0/dist/sweetalert2.min.js"></script>
-    
+
+    <script>
+        // Contas disponíveis (do PHP)
+        const availableAccounts = <?= json_encode(array_map(function($acc) {
+            return [
+                'id' => $acc['id'],
+                'nome' => $acc['nome'],
+                'saldo_atual' => $acc['saldo_atual']
+            ];
+        }, $accounts)) ?>;
+    </script>
+
     <script>
         // Função para atualizar página
         function refreshPage() {
@@ -1098,6 +1308,10 @@
 
         function renderScheduledTransactions(transactions) {
             const container = document.getElementById('scheduledTransactions');
+            if (!container) {
+                console.warn('Container scheduledTransactions não encontrado');
+                return;
+            }
 
             if (transactions.length === 0) {
                 container.innerHTML = `
@@ -1162,7 +1376,13 @@
         }
 
         function showScheduledError() {
-            document.getElementById('scheduledTransactions').innerHTML = `
+            const container = document.getElementById('scheduledTransactions');
+            if (!container) {
+                console.warn('Container scheduledTransactions não encontrado');
+                return;
+            }
+
+            container.innerHTML = `
                 <div class="text-center p-3" style="color: #dc3545;">
                     <i class="fas fa-exclamation-triangle"></i>
                     <p class="mb-0 mt-2">Erro ao carregar agendados</p>
@@ -1170,16 +1390,304 @@
             `;
         }
 
+        // Variável global para armazenar todas as transações
+        let allTransactionsData = [];
+
+        // Carregar todos os lançamentos quando modal abrir
+        document.getElementById('allTransactionsModal').addEventListener('shown.bs.modal', function() {
+            loadAllTransactions();
+        });
+
+        function loadAllTransactions() {
+            const container = document.getElementById('allTransactionsList');
+
+            fetch('<?= url('/api/transactions/filter') ?>?start_date=2020-01-01&end_date=2099-12-31')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.transactions) {
+                        allTransactionsData = data.transactions;
+                        renderAllTransactions(allTransactionsData);
+                    } else {
+                        container.innerHTML = '<div class="alert alert-warning m-3">Nenhum lançamento encontrado</div>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro ao carregar lançamentos:', error);
+                    container.innerHTML = '<div class="alert alert-danger m-3">Erro ao carregar lançamentos</div>';
+                });
+        }
+
+        function filterTransactions() {
+            const status = document.getElementById('filterStatus').value;
+            const kind = document.getElementById('filterKind').value;
+            const search = document.getElementById('searchTransaction').value.toLowerCase();
+
+            const filtered = allTransactionsData.filter(t => {
+                const matchStatus = !status || t.status === status;
+                const matchKind = !kind || t.kind === kind;
+                const matchSearch = !search || t.descricao.toLowerCase().includes(search);
+                return matchStatus && matchKind && matchSearch;
+            });
+
+            renderAllTransactions(filtered);
+        }
+
+        function renderAllTransactions(transactions) {
+            const container = document.getElementById('allTransactionsList');
+
+            if (transactions.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center p-4">
+                        <i class="fas fa-search" style="font-size: 3rem; opacity: 0.3;"></i>
+                        <p class="mt-3 text-muted">Nenhum lançamento encontrado</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '<div class="list-group list-group-flush">';
+
+            transactions.forEach(t => {
+                const isAgendado = t.status === 'agendado';
+                const statusBadge = isAgendado ? '<span class="badge bg-warning text-dark ms-2">Agendado</span>' : '';
+                const iconColor = t.kind === 'entrada' ? 'text-success' : 'text-danger';
+                const valueSign = t.kind === 'entrada' ? '+' : '-';
+
+                html += `
+                    <div class="list-group-item">
+                        <div class="d-flex align-items-start">
+                            <div class="me-3">
+                                <i class="fas fa-${t.kind === 'entrada' ? 'arrow-up' : 'arrow-down'} ${iconColor}"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="d-flex justify-content-between">
+                                    <h6 class="mb-1">${t.descricao} ${statusBadge}</h6>
+                                    <strong class="${iconColor}">${valueSign}R$ ${parseFloat(t.valor).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</strong>
+                                </div>
+                                <small class="text-muted">
+                                    ${t.account_name || 'Sem conta'} •
+                                    ${t.category_name || 'Sem categoria'} •
+                                    ${new Date(t.data_competencia).toLocaleDateString('pt-BR')}
+                                </small>
+                                ${isAgendado ? `
+                                <div class="mt-2">
+                                    <button class="btn btn-sm btn-success" onclick="confirmTransaction(${t.id})">
+                                        <i class="fas fa-check me-1"></i>Confirmar
+                                    </button>
+                                </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        let currentConfirmingTransactionId = null;
+
+        function confirmTransaction(id) {
+            currentConfirmingTransactionId = id;
+
+            // Buscar dados da transação
+            fetch(`<?= url('/api/transactions/get') ?>?id=${id}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const transaction = data.transaction;
+                        const valorOriginal = parseFloat(transaction.valor || 0);
+                        const valorFormatado = new Intl.NumberFormat('pt-BR', {
+                            style: 'currency',
+                            currency: 'BRL'
+                        }).format(valorOriginal);
+
+                        // Preencher dados no modal
+                        document.getElementById('confirmTransDesc').textContent = transaction.descricao;
+                        document.getElementById('confirmTransOriginal').textContent = valorFormatado;
+                        document.getElementById('confirmTransValue').value = valorFormatado;
+                        document.getElementById('confirmTransDate').value = new Date().toISOString().split('T')[0];
+
+                        // Preencher contas
+                        const accountSelect = document.getElementById('confirmTransAccount');
+                        accountSelect.innerHTML = '';
+                        availableAccounts.forEach(acc => {
+                            const option = document.createElement('option');
+                            option.value = acc.id;
+                            option.textContent = `${acc.nome} - R$ ${parseFloat(acc.saldo_atual || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+                            if (acc.id == transaction.account_id) {
+                                option.selected = true;
+                            }
+                            accountSelect.appendChild(option);
+                        });
+
+                        // Aplicar máscara no campo valor
+                        const valorField = document.getElementById('confirmTransValue');
+                        valorField.addEventListener('input', function(e) {
+                            let value = e.target.value.replace(/\D/g, '');
+                            if (value === '') {
+                                e.target.value = 'R$ 0,00';
+                                return;
+                            }
+                            let amount = parseInt(value) / 100;
+                            e.target.value = 'R$ ' + amount.toLocaleString('pt-BR', {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2
+                            });
+                        });
+
+                        // Abrir modal
+                        const modal = new bootstrap.Modal(document.getElementById('confirmTransactionModal'));
+                        modal.show();
+                    } else {
+                        Swal.fire('Erro!', 'Erro ao carregar dados do lançamento', 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro:', error);
+                    Swal.fire('Erro!', 'Erro ao carregar dados do lançamento', 'error');
+                });
+        }
+
+        function submitConfirmTransaction() {
+            const accountId = document.getElementById('confirmTransAccount').value;
+            const valorInput = document.getElementById('confirmTransValue').value;
+            const dateInput = document.getElementById('confirmTransDate').value;
+
+            if (!accountId || !valorInput || !dateInput) {
+                Swal.fire('Atenção!', 'Preencha todos os campos', 'warning');
+                return;
+            }
+
+            // Converter valor brasileiro para decimal
+            let valorFinal = valorInput.replace(/^R\$\s*/, '');
+            if (valorFinal.includes(',')) {
+                valorFinal = valorFinal.replace(/\./g, '').replace(',', '.');
+            }
+
+            fetch('<?= url('/api/transactions/confirm') ?>', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `id=${currentConfirmingTransactionId}&payment_date=${dateInput}&valor=${valorFinal}&account_id=${accountId}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Fechar modal
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('confirmTransactionModal'));
+                    modal.hide();
+
+                    Swal.fire('Sucesso!', 'Lançamento confirmado', 'success');
+                    loadAllTransactions(); // Recarregar lista
+                } else {
+                    Swal.fire('Erro!', data.message, 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Erro:', error);
+                Swal.fire('Erro!', 'Erro ao confirmar lançamento', 'error');
+            });
+        }
+
+        // Função para carregar descrições para autocomplete
+        function loadDescriptions() {
+            fetch('<?= url('/api/transactions/descriptions') ?>')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.descriptions) {
+                        const incomeDatalist = document.getElementById('incomeDescriptionsList');
+                        const expenseDatalist = document.getElementById('expenseDescriptionsList');
+
+                        // Limpar datalists
+                        incomeDatalist.innerHTML = '';
+                        expenseDatalist.innerHTML = '';
+
+                        // Adicionar opções
+                        data.descriptions.forEach(desc => {
+                            const option1 = document.createElement('option');
+                            option1.value = desc;
+                            incomeDatalist.appendChild(option1);
+
+                            const option2 = document.createElement('option');
+                            option2.value = desc;
+                            expenseDatalist.appendChild(option2);
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro ao carregar descrições:', error);
+                });
+        }
+
+        // Atualizar descrições quando o usuário digitar (busca dinâmica)
+        let descriptionTimeout;
+        function setupDescriptionSearch(inputId, datalistId) {
+            const input = document.getElementById(inputId);
+            if (!input) {
+                console.warn('Input não encontrado:', inputId);
+                return;
+            }
+
+            input.addEventListener('input', function() {
+                clearTimeout(descriptionTimeout);
+                const searchTerm = this.value;
+
+                if (searchTerm.length >= 2) {
+                    descriptionTimeout = setTimeout(() => {
+                        fetch('<?= url('/api/transactions/descriptions') ?>?search=' + encodeURIComponent(searchTerm))
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.success && data.descriptions) {
+                                    const datalist = document.getElementById(datalistId);
+                                    if (datalist) {
+                                        datalist.innerHTML = '';
+
+                                        data.descriptions.forEach(desc => {
+                                            const option = document.createElement('option');
+                                            option.value = desc;
+                                            datalist.appendChild(option);
+                                        });
+                                    }
+                                }
+                            })
+                            .catch(error => {
+                                console.error('Erro ao buscar descrições:', error);
+                            });
+                    }, 300);
+                }
+            });
+        }
+
         // Configurar data de hoje como padrão
         document.addEventListener('DOMContentLoaded', function() {
             // Carregar agendados
             loadScheduledTransactions();
             const today = new Date().toISOString().split('T')[0];
-            document.getElementById('incomeData').value = today;
-            document.getElementById('expenseData').value = today;
-            document.getElementById('transferData').value = today;
-            document.getElementById('vaultData').value = today;
-            
+
+            // Definir data de hoje nos campos (com verificação de existência)
+            const incomeDataField = document.getElementById('incomeData');
+            const expenseDataField = document.getElementById('expenseData');
+            const transferDataField = document.getElementById('transferData');
+            const transferDateField = document.getElementById('transferDate');
+            const vaultDataField = document.getElementById('vaultData');
+
+            if (incomeDataField) incomeDataField.value = today;
+            if (expenseDataField) expenseDataField.value = today;
+            if (transferDataField) transferDataField.value = today;
+            if (transferDateField) transferDateField.value = today;
+            if (vaultDataField) vaultDataField.value = today;
+
+            // Carregar descrições para autocomplete
+            loadDescriptions();
+
+            // Configurar busca dinâmica de descrições
+            setupDescriptionSearch('incomeDescricao', 'incomeDescriptionsList');
+            setupDescriptionSearch('expenseDescricao', 'expenseDescriptionsList');
+            setupDescriptionSearch('transferDescription', 'transferDescriptionsList');
+
             // Aplicar máscara de moeda
             function formatBrazilianCurrency(value) {
                 let numbers = value.replace(/\D/g, '');
@@ -1192,30 +1700,120 @@
             }
             
             function applyMask(field) {
+                if (!field) return;
                 field.addEventListener('input', function(e) {
                     e.target.value = formatBrazilianCurrency(e.target.value);
                 });
             }
-            
+
             applyMask(document.getElementById('incomeValor'));
             applyMask(document.getElementById('expenseValor'));
             applyMask(document.getElementById('transferValor'));
+            applyMask(document.getElementById('transferValue'));
             applyMask(document.getElementById('vaultValor'));
             
             // Carregar categorias corretas ao abrir modais
-            document.getElementById('incomeModal').addEventListener('show.bs.modal', function() {
-                updateCategoriesByType('entrada', 'incomeCategory');
-            });
-            
-            document.getElementById('expenseModal').addEventListener('show.bs.modal', function() {
-                updateCategoriesByType('saida', 'expenseCategory');
-            });
+            const incomeModal = document.getElementById('incomeModal');
+            const expenseModal = document.getElementById('expenseModal');
+            const vaultModal = document.getElementById('vaultModal');
 
-            document.getElementById('vaultModal').addEventListener('show.bs.modal', function() {
-                loadVaultGoals();
-            });
+            if (incomeModal) {
+                incomeModal.addEventListener('show.bs.modal', function() {
+                    updateCategoriesByType('entrada', 'incomeCategory');
+                });
+
+                // Focar no campo descrição quando modal abrir completamente
+                incomeModal.addEventListener('shown.bs.modal', function() {
+                    setTimeout(function() {
+                        const descField = document.getElementById('incomeDescricao');
+                        if (descField) descField.focus();
+                    }, 100);
+                });
+            }
+
+            if (expenseModal) {
+                expenseModal.addEventListener('show.bs.modal', function() {
+                    updateCategoriesByType('saida', 'expenseCategory');
+                });
+
+                // Focar no campo descrição quando modal abrir completamente
+                expenseModal.addEventListener('shown.bs.modal', function() {
+                    setTimeout(function() {
+                        const descField = document.getElementById('expenseDescricao');
+                        if (descField) descField.focus();
+                    }, 100);
+                });
+            }
+
+            if (vaultModal) {
+                vaultModal.addEventListener('show.bs.modal', function() {
+                    loadVaultGoals();
+                });
+            }
+
+            // Resetar formulários quando modais fecham
+            if (incomeModal) {
+                incomeModal.addEventListener('hidden.bs.modal', function() {
+                    const form = document.getElementById('incomeForm');
+                    const dataField = document.getElementById('incomeData');
+                    const valorField = document.getElementById('incomeValor');
+
+                    if (form) form.reset();
+                    if (dataField) {
+                        const today = new Date().toISOString().split('T')[0];
+                        dataField.value = today;
+                    }
+                    if (valorField) valorField.value = 'R$ 0,00';
+                });
+            }
+
+            if (expenseModal) {
+                expenseModal.addEventListener('hidden.bs.modal', function() {
+                    const form = document.getElementById('expenseForm');
+                    const dataField = document.getElementById('expenseData');
+                    const valorField = document.getElementById('expenseValor');
+
+                    if (form) form.reset();
+                    if (dataField) {
+                        const today = new Date().toISOString().split('T')[0];
+                        dataField.value = today;
+                    }
+                    if (valorField) valorField.value = 'R$ 0,00';
+                });
+            }
+
+            const transferModal = document.getElementById('transferModal');
+            if (transferModal) {
+                transferModal.addEventListener('hidden.bs.modal', function() {
+                    const form = document.getElementById('transferForm');
+                    const dateField = document.getElementById('transferDate');
+                    const valueField = document.getElementById('transferValue');
+
+                    if (form) form.reset();
+                    if (dateField) {
+                        const today = new Date().toISOString().split('T')[0];
+                        dateField.value = today;
+                    }
+                    if (valueField) valueField.value = 'R$ 0,00';
+                });
+            }
+
+            if (vaultModal) {
+                vaultModal.addEventListener('hidden.bs.modal', function() {
+                    const form = document.getElementById('vaultForm');
+                    const dataField = document.getElementById('vaultData');
+                    const valorField = document.getElementById('vaultValor');
+
+                    if (form) form.reset();
+                    if (dataField) {
+                        const today = new Date().toISOString().split('T')[0];
+                        dataField.value = today;
+                    }
+                    if (valorField) valorField.value = 'R$ 0,00';
+                });
+            }
         });
-        
+
         // Função para converter moeda brasileira para decimal
         function parseBrazilianCurrency(value) {
             if (!value || value === 'R$ ') return '0';
@@ -1309,13 +1907,13 @@
         function saveExpense() {
             const form = document.getElementById('expenseForm');
             const formData = new FormData(form);
-            
+
             const valorField = document.getElementById('expenseValor');
             const valorNumerico = parseBrazilianCurrency(valorField.value);
             formData.set('valor', valorNumerico);
             formData.set('kind', 'saida');
             formData.set('status', 'confirmado');
-            
+
             fetch('<?= url('/api/transactions/create') ?>', {
                 method: 'POST',
                 body: formData
@@ -1345,34 +1943,73 @@
                 Swal.fire('Erro!', 'Erro ao salvar despesa', 'error');
             });
         }
-        
-        // Resetar formulários quando modais fecham
-        document.getElementById('incomeModal').addEventListener('hidden.bs.modal', function() {
-            document.getElementById('incomeForm').reset();
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('incomeData').value = today;
-            document.getElementById('incomeValor').value = 'R$ 0,00';
-        });
 
-        document.getElementById('expenseModal').addEventListener('hidden.bs.modal', function() {
-            document.getElementById('expenseForm').reset();
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('expenseData').value = today;
-            document.getElementById('expenseValor').value = 'R$ 0,00';
-        });
+        // Handler do formulário de transferência
+        document.getElementById('transferForm')?.addEventListener('submit', function(e) {
+            e.preventDefault();
 
-        document.getElementById('transferModal').addEventListener('hidden.bs.modal', function() {
-            document.getElementById('transferForm').reset();
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('transferData').value = today;
-            document.getElementById('transferValor').value = 'R$ 0,00';
-        });
+            const formData = new FormData();
+            const fromAccount = document.getElementById('transferFromAccount').value;
+            const toAccount = document.getElementById('transferToAccount').value;
+            const valueField = document.getElementById('transferValue');
+            const date = document.getElementById('transferDate').value;
+            const description = document.getElementById('transferDescription').value || 'Transferência entre contas';
 
-        document.getElementById('vaultModal').addEventListener('hidden.bs.modal', function() {
-            document.getElementById('vaultForm').reset();
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('vaultData').value = today;
-            document.getElementById('vaultValor').value = 'R$ 0,00';
+            // Validações
+            if (!fromAccount || !toAccount) {
+                Swal.fire('Atenção!', 'Selecione as contas de origem e destino', 'warning');
+                return;
+            }
+
+            if (fromAccount === toAccount) {
+                Swal.fire('Atenção!', 'Conta de origem deve ser diferente da conta de destino', 'warning');
+                return;
+            }
+
+            const valorNumerico = parseBrazilianCurrency(valueField.value);
+            if (valorNumerico <= 0) {
+                Swal.fire('Atenção!', 'Valor deve ser maior que zero', 'warning');
+                return;
+            }
+
+            formData.append('account_from', fromAccount);
+            formData.append('account_to', toAccount);
+            formData.append('valor', valorNumerico);
+            formData.append('data_competencia', date);
+            formData.append('descricao', description);
+
+            fetch('<?= url('/api/transactions/transfer') ?>', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Fechar modal
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('transferModal'));
+                    modal.hide();
+
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Transferência Realizada!',
+                        text: data.message,
+                        timer: 2000,
+                        showConfirmButton: false,
+                        toast: true,
+                        position: 'top-end'
+                    }).then(() => {
+                        // Vibrar se disponível
+                        vibrate([10, 50, 10]);
+                        forceRefreshData();
+                    });
+                } else {
+                    Swal.fire('Erro!', data.message, 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Erro:', error);
+                Swal.fire('Erro!', 'Erro ao realizar transferência', 'error');
+            });
         });
 
         // Função para verificar atualizações manualmente
@@ -2250,12 +2887,71 @@
             initializeSearch();
         });
         
+        // Função para dar baixa em transação
+        function payTransaction(transactionId, description) {
+            Swal.fire({
+                title: 'Dar baixa no lançamento',
+                html: `<div class="text-start">
+                    <strong>Descrição:</strong> ${description}<br><br>
+                    <label class="form-label">Data de pagamento:</label>
+                    <input type="date" class="form-control" id="paymentDate" value="${new Date().toISOString().split('T')[0]}">
+                </div>`,
+                showCancelButton: true,
+                confirmButtonText: '<i class="fas fa-check me-2"></i>Dar Baixa',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#28a745',
+                preConfirm: () => {
+                    const paymentDate = document.getElementById('paymentDate').value;
+                    if (!paymentDate) {
+                        Swal.showValidationMessage('Data de pagamento é obrigatória');
+                        return false;
+                    }
+                    return paymentDate;
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const paymentDate = result.value;
+
+                    fetch('<?= url('/api/transactions/pay') ?>', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            transaction_id: transactionId,
+                            payment_date: paymentDate
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Sucesso!',
+                                text: 'Baixa realizada com sucesso',
+                                timer: 1500,
+                                showConfirmButton: false
+                            }).then(() => {
+                                location.reload();
+                            });
+                        } else {
+                            Swal.fire('Erro!', data.message, 'error');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Erro ao dar baixa:', error);
+                        Swal.fire('Erro!', 'Erro ao processar baixa', 'error');
+                    });
+                }
+            });
+        }
+
         // Função para logout
         function logout() {
             if (confirm('Deseja realmente sair?')) {
                 // Salvar informação de que estamos vindo do mobile
                 sessionStorage.setItem('return_to_mobile', 'true');
-                
+
                 // Para PWA, forçar logout e redirecionamento
                 if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
                     // Se é PWA, redirecionar diretamente para logout com parâmetro mobile
@@ -2370,7 +3066,7 @@
         if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
             document.body.classList.add('pwa-mode');
             console.log('Running as PWA');
-            
+
             // Debug info para PWA
             console.log('PWA Debug Info:');
             console.log('- URL atual:', window.location.href);
@@ -2379,5 +3075,8 @@
             console.log('- Display mode:', window.matchMedia('(display-mode: standalone)').matches ? 'standalone' : 'browser');
         }
     </script>
+
+    <!-- Session Manager - Renovação automática de sessão -->
+    <script src="<?= url('assets/js/session-manager.js') ?>"></script>
 </body>
 </html>
